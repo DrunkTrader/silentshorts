@@ -16,7 +16,7 @@ import pytest
 app_module = pytest.importorskip("app")
 import recut  # noqa: E402
 
-JOB_ID = "reframe-endpoint-test-job"
+JOB_ID = "5a1f0c3e-0000-4000-8000-000000000002"
 
 TRANSCRIPT = {
     "language": "en",

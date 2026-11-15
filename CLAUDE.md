@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OpenShorts is an AI-powered vertical video generator that turns long YouTube videos or local uploads into short 9:16 clips for TikTok, Instagram Reels and YouTube Shorts. Google Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite`, overridable with `GEMINI_MODEL`) picks the viral moments and writes the titles. It ships as self-host (BYOK) and as a Cloud edition (`BILLING_ENABLED`, code under `cloud/`).
+SilentShorts is an AI-powered vertical video generator that turns long YouTube videos or local uploads into short 9:16 clips for TikTok, Instagram Reels and YouTube Shorts. Google Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite`, overridable with `GEMINI_MODEL`) picks the viral moments and writes the titles. It ships as self-host (BYOK) and as a Cloud edition (`BILLING_ENABLED`, code under `cloud/`).
 
 ## Development Commands
 
@@ -26,11 +26,13 @@ pip install pytest pillow httpx pydantic sqlalchemy greenlet numpy opencv-python
   python-dotenv google-genai fastapi boto3 PyJWT email-validator python-multipart
 ```
 
-- Pipeline modules import the ML stack lazily behind feature gates, and tests exercise the gated-off paths: keep new heavy imports inside functions or CI breaks.
+- Pipeline modules import the ML stack lazily behind feature gates, and tests exercise the gated-off paths: keep new heavy imports inside functions or CI breaks. The exception is `main.py`, which imports torch/ultralytics/mediapipe at module level (and loads YOLO on import); tests that need it go through `tests/main_harness.py`, which stubs them.
 - CI (`.github/workflows/`) runs `pytest` (Python 3.11) and `npm run build` (Node 20); it does not lint, so run `npm run lint` yourself.
+- Job ids are uuid4 strings. Any route with `{job_id}` in its path declares `dependencies=[Depends(valid_job_id)]` (`app.py`), and test fixtures use uuid-shaped ids; an id like `pending` once matched another user's reserved upload (`uploads/pending_<id>_<name>`).
+- `ruff check .` (config in `ruff.toml`) runs in CI and fails on real errors only; `npm run lint` also runs in CI now.
 - DB schema is created with `create_all` at boot (`cloud/database.py`): changes to `cloud/models.py` must be additive. `alembic/` has no migrations yet.
 - Remotion compositions exist twice, `remotion/` (server render) and `dashboard/src/remotion/` (in-browser preview/render), and have already drifted (`lib/fonts.ts`, `lib/types.ts`): change both.
-- `cli/` is the `openshorts` PyPI CLI, published by pushing a `cli-vX.Y.Z` tag matching `cli/pyproject.toml`.
+- `cli/` is the `silentshorts` PyPI CLI, published by pushing a `cli-vX.Y.Z` tag matching `cli/pyproject.toml`.
 
 ## Pipeline
 
@@ -64,7 +66,7 @@ Ingest (yt-dlp or upload) → transcription (word timestamps) → scene detectio
 **SEO / site**
 - Keep `seo/landing-fallback.js` in sync with `Landing.jsx`. Never add a static `public/sitemap.xml` back: `vite-plugin-seo.js` generates it.
 - Standalone pages are emitted as flat `.html` files (directories make nginx 301 and break canonicals).
-- When editing pricing anywhere, edit `seo/data.js` too. Never say "OpenShorts is free" without the Cloud price next to it.
+- When editing pricing anywhere, edit `seo/data.js` too. Never say "SilentShorts is free" without the Cloud price next to it.
 - `/gta-5-clips`, `/gta-6-clips` and `/platforms/twitch` state the silent-footage thresholds and stretch sizes: change their copy if that behaviour changes.
 
 **Free tools**

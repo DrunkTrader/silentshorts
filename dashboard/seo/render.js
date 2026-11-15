@@ -231,18 +231,18 @@ const I18N = {
   en: {
     home: 'Home',
     related: 'Related pages',
-    by: 'By the OpenShorts team',
+    by: 'By the SilentShorts team',
     published: 'Published',
     updated: 'Updated',
     footer: {
-      product: 'OpenShorts',
+      product: 'SilentShorts',
       platforms: 'Platforms',
       useCases: 'Use cases',
       compare: 'Compare',
       tools: 'Free tools',
       guides: 'Guides',
       more: 'More comparisons',
-      note: `OpenShorts self-hosted is free and open source under MIT. OpenShorts Cloud
+      note: `SilentShorts self-hosted is free and open source under MIT. SilentShorts Cloud
   is the hosted service: your first video free up to 60 minutes, then 20 free
   minutes a month, paid plans from $12/month.`,
       lastUpdated: 'Last updated',
@@ -251,19 +251,19 @@ const I18N = {
   es: {
     home: 'Inicio',
     related: 'Páginas relacionadas',
-    by: 'Por el equipo de OpenShorts',
+    by: 'Por el equipo de SilentShorts',
     published: 'Publicado',
     updated: 'Actualizado',
     footer: {
-      product: 'OpenShorts',
+      product: 'SilentShorts',
       platforms: 'Plataformas',
       useCases: 'Casos de uso',
       compare: 'Comparativas',
       tools: 'Herramientas gratis',
       guides: 'Guías',
       more: 'Más comparativas',
-      note: `OpenShorts autoalojado es gratis y de código abierto con licencia MIT.
-  OpenShorts Cloud es el servicio alojado: tu primer vídeo gratis hasta 60
+      note: `SilentShorts autoalojado es gratis y de código abierto con licencia MIT.
+  SilentShorts Cloud es el servicio alojado: tu primer vídeo gratis hasta 60
   minutos, después 20 minutos gratis al mes, planes de pago desde 12 $/mes.`,
       lastUpdated: 'Última actualización',
     },
@@ -437,7 +437,7 @@ const FOOTER_COLUMNS = [
     ['/how-to/instagram-reel-dimensions', 'Instagram Reel dimensions'],
     ['/how-to/make-a-reel-on-facebook', 'How to make a Reel on Facebook'],
     ['/how-to/best-time-to-post-youtube-shorts', 'Best time to post YouTube Shorts'],
-    ['/how-openshorts-works', 'How it works'],
+    ['/how-silentshorts-works', 'How it works'],
     ['/self-hosted-ai-clip-maker', 'Self-hosted AI clip maker'],
     ['/open-source-video-clipper', 'Open source video clipper'],
     ['/mcp', 'MCP server and API'],
@@ -447,7 +447,7 @@ const FOOTER_COLUMNS = [
 ]
 
 const FOOTER_PRODUCT = [
-  [`${SITE.url}/`, 'OpenShorts'],
+  [`${SITE.url}/`, 'SilentShorts'],
   ['/pricing', 'Pricing'],
   ['/open-source-ai-video-generator', 'Open source AI video generator'],
   [SITE.repo, 'Source on GitHub'],
@@ -517,7 +517,7 @@ const ANALYTICS = `
       var clientId = "%VITE_OPENPANEL_CLIENT_ID%";
       var unset = function (v) { return !v || v.charAt(0) === "%"; };
       if (unset(apiUrl) || unset(clientId)) return false;
-      var ANALYTICS_HOSTS = /^(www\\.)?openshorts\\.app$/;
+      var ANALYTICS_HOSTS = /^(www\\.)?silentshorts\\.app$/;
       if (!ANALYTICS_HOSTS.test(location.hostname)) return false;
       started = true;
       window.op("init", {
@@ -678,7 +678,7 @@ export function renderPage(page, related = [], { cta = true, toolScript = '', bu
 ${page.noindex ? '' : `<link rel="canonical" href="${canonical}">\n`}<meta name="robots" content="${
     page.noindex ? 'noindex,follow' : 'index,follow,max-image-preview:large,max-snippet:-1'
   }">
-${hreflangLinks(page)}<link rel="icon" type="image/png" href="/logo-openshorts.png">
+${hreflangLinks(page)}<link rel="icon" type="image/png" href="/logo-silentshorts.png">
 <link rel="preload" href="/fonts/geist-400-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/instrument-serif-400-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/fonts.css">

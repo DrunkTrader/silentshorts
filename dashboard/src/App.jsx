@@ -42,7 +42,7 @@ import { track } from './lib/analytics';
 
 // Enhanced "Encryption" using XOR + Base64 with a Salt
 // This is better than plain Base64 but still client-side.
-const SECRET_KEY = import.meta.env.VITE_ENCRYPTION_KEY || "OpenShorts-Static-Salt-Change-Me";
+const SECRET_KEY = import.meta.env.VITE_ENCRYPTION_KEY || "SilentShorts-Static-Salt-Change-Me";
 const ENCRYPTION_PREFIX = "ENC:";
 
 const encrypt = (text) => {
@@ -248,7 +248,7 @@ const UserProfileSelector = ({ profiles, selectedUserId, onSelect, onConnect }) 
   );
 };
 
-const SESSION_KEY = 'openshorts_session';
+const SESSION_KEY = 'silentshorts_session';
 
 // The server's own explanation for a rejected/failed job, readable: FastAPI
 // answers {"detail": "..."} or {"detail": {"message": ...}}. Showing the raw
@@ -687,7 +687,7 @@ function App() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `openshorts_clips_${(jobId || '').slice(0, 8)}.zip`;
+      a.download = `silentshorts_clips_${(jobId || '').slice(0, 8)}.zip`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1367,7 +1367,7 @@ function App() {
         <span className={collapsed ? 'hidden lg:block truncate' : 'truncate'}>Landing page</span>
       </a>
       <a
-        href="https://github.com/mutonby/openshorts"
+        href="https://github.com/DrunkTrader/silentshorts"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Open source on GitHub"
@@ -1387,12 +1387,12 @@ function App() {
         </a>
       )}
       <a
-        href="mailto:info@openshorts.app"
-        aria-label="Email info@openshorts.app"
+        href="mailto:reachoutneerajkumar@gmail.com"
+        aria-label="Email reachoutneerajkumar@gmail.com"
         className={`flex items-center gap-2 px-3 py-2 text-xs text-muted hover:text-ink transition-colors duration-150 rounded-input ${collapsed ? 'justify-center lg:justify-start' : ''}`}
       >
         <Mail size={14} className="shrink-0" />
-        <span className={collapsed ? 'hidden lg:block truncate' : 'truncate'}>info@openshorts.app</span>
+        <span className={collapsed ? 'hidden lg:block truncate' : 'truncate'}>reachoutneerajkumar@gmail.com</span>
       </a>
     </>
   );
@@ -1401,11 +1401,11 @@ function App() {
   // entirely — an unlabelled 80px rail ate a fifth of a phone screen.
   const Sidebar = () => (
     <aside aria-label="Sidebar" className="hidden md:flex w-16 lg:w-56 bg-paper2 border-r border-rule flex-col h-full shrink-0 transition-[width] duration-200 ease-out">
-      <a href="#app" onClick={() => goToTab('dashboard')} className="h-14 px-4 lg:px-5 flex items-center justify-center lg:justify-start gap-3 shrink-0" title="openshorts home" aria-label="openshorts home">
+      <a href="#app" onClick={() => goToTab('dashboard')} className="h-14 px-4 lg:px-5 flex items-center justify-center lg:justify-start gap-3 shrink-0" title="silentshorts home" aria-label="silentshorts home">
         <div className="w-8 h-8 bg-paper3 rounded-input flex items-center justify-center shrink-0 overflow-hidden border border-rule">
-          <img src="/logo-openshorts.png" alt="Logo" className="w-full h-full object-cover" />
+          <img src="/logo-silentshorts.png" alt="Logo" className="w-full h-full object-cover" />
         </div>
-        <span className="font-display lowercase text-lg text-ink hidden lg:block">openshorts</span>
+        <span className="font-display lowercase text-lg text-ink hidden lg:block">silentshorts</span>
       </a>
 
       <nav aria-label="Sections" className="flex-1 px-2.5 lg:px-3 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
@@ -1461,9 +1461,9 @@ function App() {
         <div className="flex items-center justify-between px-5 h-14 border-b border-rule shrink-0">
           <a href="#app" className="flex items-center gap-2.5" onClick={() => goToTab('dashboard')}>
             <div className="w-7 h-7 bg-paper3 rounded-input overflow-hidden border border-rule shrink-0">
-              <img src="/logo-openshorts.png" alt="" className="w-full h-full object-cover" />
+              <img src="/logo-silentshorts.png" alt="" className="w-full h-full object-cover" />
             </div>
-            <span className="font-display lowercase text-lg text-ink">openshorts</span>
+            <span className="font-display lowercase text-lg text-ink">silentshorts</span>
           </a>
           <button
             onClick={() => setNavOpen(false)}
@@ -1572,7 +1572,7 @@ function App() {
             {/* Mobile: the drawer handle, and the section name the icon rail
                 used to carry. Without it a phone has no "where am I". */}
             <span data-tutorial="nav-clips" className="md:hidden font-display lowercase text-base text-ink truncate">
-              {activeNav?.label || 'openshorts'}
+              {activeNav?.label || 'silentshorts'}
             </span>
             {status !== 'idle' && (
               <Button
@@ -1651,10 +1651,10 @@ function App() {
                 <span className="font-medium text-ink">Required API keys missing.</span>{' '}
                 <span className="text-muted hidden sm:inline">
                   {!geminiOk && !uploadPostKey
-                    ? 'Set your Gemini and Upload-Post API keys to use OpenShorts.'
+                    ? 'Set your Gemini and Upload-Post API keys to use SilentShorts.'
                     : !geminiOk
-                      ? 'Set your Gemini API key to use OpenShorts.'
-                      : 'Set your Upload-Post API key to use OpenShorts.'}
+                      ? 'Set your Gemini API key to use SilentShorts.'
+                      : 'Set your Upload-Post API key to use SilentShorts.'}
                 </span>
               </div>
             </div>
@@ -2525,7 +2525,7 @@ function App() {
       >
         <div className="space-y-4">
           <p className="text-sm text-muted">
-            OpenShorts needs both a <strong className="text-ink2">Gemini</strong> API key and an <strong className="text-ink2">Upload-Post</strong> API key. Both have free tiers.
+            SilentShorts needs both a <strong className="text-ink2">Gemini</strong> API key and an <strong className="text-ink2">Upload-Post</strong> API key. Both have free tiers.
           </p>
 
           {/* Gemini block */}

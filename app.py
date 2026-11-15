@@ -22,7 +22,7 @@ from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from typing import Any, Dict, Optional, List
 from contextlib import asynccontextmanager, suppress
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Header, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Header, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
@@ -272,7 +272,7 @@ def gemini_missing_error():
     """
     if BILLING_ENABLED:
         return payment_required(
-            "no_plan", "This action needs an active OpenShorts plan (or the user's own API key).")
+            "no_plan", "This action needs an active SilentShorts plan (or the user's own API key).")
     return HTTPException(status_code=400, detail="Missing X-Gemini-Key header")
 
 
@@ -631,7 +631,7 @@ async def _reserve_after_job_limit(request, user, url, input_path, job_id, max_m
     if balance["remaining"] < 1:
         _maybe_send_quota_email(user)
         raise payment_required(
-            "quota_exceeded", "The user is out of OpenShorts processing minutes for this period.",
+            "quota_exceeded", "The user is out of SilentShorts processing minutes for this period.",
             minutes_required=1, minutes_remaining=balance["remaining"], partial_minutes=0)
 
     # The dashboard's cost line probed this URL a moment ago (/api/process/
@@ -2619,9 +2619,9 @@ async def _webhook_clip_entries(job_id, job):
 
 
 async def _deliver_webhook(url, body: bytes, secret):
-    headers = {"Content-Type": "application/json", "User-Agent": "OpenShorts-Webhook/1.0"}
+    headers = {"Content-Type": "application/json", "User-Agent": "SilentShorts-Webhook/1.0"}
     if secret:
-        headers["X-OpenShorts-Signature"] = _sign_webhook(body, secret)
+        headers["X-SilentShorts-Signature"] = _sign_webhook(body, secret)
     from security_utils import assert_public_url, UnsafeURLError
     loop = asyncio.get_event_loop()
     for attempt, delay in enumerate(WEBHOOK_RETRY_DELAYS, 1):
@@ -2854,12 +2854,34 @@ app.include_router(_mcp_server.router)
 import free_tools as _free_tools
 app.include_router(_free_tools.router)
 
-# Enable CORS for frontend. Cloud mode locks this down to the configured origins;
-# self-host keeps the permissive wildcard it has always used.
+# Browser origins that may call the API directly. The dashboard normally does
+# not need this: it uses relative URLs through the Vite/nginx proxy, which is
+# same-origin. This list is for a dashboard served from somewhere else
+# (VITE_API_URL). Cloud mode uses the configured origins. Self-host used to
+# answer "*" with credentials, which let any web page the user opened read and
+# drive the local API; it now allows the local dashboard origins, and
+# ALLOWED_ORIGINS (comma separated, "*" to restore the old behavior) widens it.
+_SELF_HOST_CORS_ORIGINS = [
+    "http://localhost:5173", "http://127.0.0.1:5173",
+    "http://localhost:5175", "http://127.0.0.1:5175",
+    "http://localhost:8000", "http://127.0.0.1:8000",
+]
+
+
+def _cors_origins(billing: bool, env=None) -> list:
+    if billing:
+        return cloud.settings.allowed_origins
+    raw = (env if env is not None else os.environ).get("ALLOWED_ORIGINS", "")
+    configured = [o.strip() for o in raw.split(",") if o.strip()]
+    return configured or list(_SELF_HOST_CORS_ORIGINS)
+
+
+_cors_allowed = _cors_origins(BILLING_ENABLED)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cloud.settings.allowed_origins if BILLING_ENABLED else ["*"],
-    allow_credentials=True,
+    allow_origins=_cors_allowed,
+    # Credentials with a wildcard origin lets every site act as the user.
+    allow_credentials="*" not in _cors_allowed,
     allow_methods=["*"],
     allow_headers=["*"],
     # Without this the browser hides them from fetch(), so the clip download had
@@ -2927,6 +2949,20 @@ def _is_uuid_id(value) -> bool:
     return isinstance(value, str) and bool(_JOB_ID_RE.match(value))
 
 
+def _require_job_id(job_id) -> None:
+    """404 for an id that cannot be a job. Same answer as an unknown job, so
+    a probe learns nothing."""
+    if not _is_uuid_id(job_id):
+        raise HTTPException(status_code=404, detail="Not found")
+
+
+def valid_job_id(job_id: str) -> None:
+    """Route dependency: every ``/{job_id}`` path that reaches a job's files
+    declares ``dependencies=[Depends(valid_job_id)]``, so a route cannot forget
+    the check (an id like "pending" once matched another user's upload)."""
+    _require_job_id(job_id)
+
+
 async def _assert_disk_job_owner(request, job_id: str) -> None:
     """Owner check for a job this instance holds no in-memory record of (it
     finished on the other container during a deploy, or memory was swept):
@@ -2968,6 +3004,13 @@ def _read_owner_marker(directory: str) -> Optional[str]:
         return None
 
 
+def _evict_oldest_half(cache: dict) -> None:
+    """Drop the older half of a ``{key: (..., cached_at)}`` cache. Clearing it
+    outright sent every cached owner back to the database in one burst."""
+    for key, _ in sorted(cache.items(), key=lambda kv: kv[1][2])[:len(cache) // 2]:
+        cache.pop(key, None)
+
+
 async def _media_project(job_id: str):
     """(owner, created_at) of the Project row for ``job_id``, cached."""
     now = time.time()
@@ -2991,7 +3034,7 @@ async def _media_project(job_id: str):
             print(f"⚠️ /videos owner lookup failed: {e}")
             return None, None
     if len(_media_project_cache) >= _MEDIA_PROJECT_CACHE_MAX:
-        _media_project_cache.clear()
+        _evict_oldest_half(_media_project_cache)
     _media_project_cache[job_id] = (owner, created, now)
     return owner, created
 
@@ -3524,7 +3567,7 @@ def _kill_job_process(process):
             os.kill(pid, signal.SIGKILL)
 
 
-@app.post("/api/jobs/{job_id}/cancel")
+@app.post("/api/jobs/{job_id}/cancel", dependencies=[Depends(valid_job_id)])
 async def cancel_job(job_id: str, request: Request):
     """Cancel a queued or running job. Unlike a drain, it is final: the resume
     manifest goes, the reservation is released, and it is never resumed."""
@@ -3573,7 +3616,7 @@ async def _keep_target(job_id, index, request):
     return job_path, _read_keeps(job_path)
 
 
-@app.post("/api/jobs/{job_id}/clips/{index}/keep")
+@app.post("/api/jobs/{job_id}/clips/{index}/keep", dependencies=[Depends(valid_job_id)])
 async def keep_clip(job_id: str, index: int, req: KeepRequest, request: Request):
     """Protect one clip's file from the retention sweep until ``until``
     (clamped to now + 61 days). Replaces an earlier keep of the same clip."""
@@ -3592,7 +3635,7 @@ async def keep_clip(job_id: str, index: int, req: KeepRequest, request: Request)
     return {"job_id": job_id, "index": index, "until": keeps[index].isoformat()}
 
 
-@app.delete("/api/jobs/{job_id}/clips/{index}/keep")
+@app.delete("/api/jobs/{job_id}/clips/{index}/keep", dependencies=[Depends(valid_job_id)])
 async def unkeep_clip(job_id: str, index: int, request: Request):
     job_path, keeps = await _keep_target(job_id, index, request)
     if keeps.pop(index, None) is not None:
@@ -3792,6 +3835,9 @@ pending_uploads: Dict[str, Dict] = {}
 # Unconsumed slots are gone after this; a consumed one becomes the job's
 # input and follows the job's own retention instead.
 UPLOAD_TTL_SECONDS = int(os.environ.get("UPLOAD_TTL_SECONDS", str(6 * 3600)))
+# Self-host has no per-user cap, so this bounds the unused slots (and the disk
+# they can fill) for the whole server.
+MAX_PENDING_UPLOADS_SELF_HOST = int(os.environ.get("MAX_PENDING_UPLOADS_SELF_HOST", "20"))
 
 
 def _upload_url_base(request):
@@ -3809,17 +3855,22 @@ async def create_upload(request: Request):
     except Exception:
         body = {}
     filename = os.path.basename(str((body or {}).get("filename") or "video.mp4")) or "video.mp4"
+    # Each slot can hold MAX_FILE_SIZE_MB on disk until it expires. Cloud caps
+    # it per user; self-host has no users, so one cap for the whole server.
+    now = time.time()
     if BILLING_ENABLED:
-        # Each slot can hold MAX_FILE_SIZE_MB on disk until it expires.
-        now = time.time()
         open_slots = sum(1 for sl in pending_uploads.values()
                          if sl.get("user_id") == user_id
                          and now - sl["created"] <= UPLOAD_TTL_SECONDS)
         cap = _cloud_config.MAX_PENDING_UPLOADS_PER_USER
-        if open_slots >= cap:
-            raise HTTPException(status_code=429, detail=(
-                f"You have {open_slots} unused upload slots open (the most is {cap}). "
-                "Process or DELETE one, or wait for it to expire."))
+    else:
+        open_slots = sum(1 for sl in pending_uploads.values()
+                         if now - sl["created"] <= UPLOAD_TTL_SECONDS)
+        cap = MAX_PENDING_UPLOADS_SELF_HOST
+    if open_slots >= cap:
+        raise HTTPException(status_code=429, detail=(
+            f"{'You have' if BILLING_ENABLED else 'There are'} {open_slots} unused upload "
+            f"slots open (the most is {cap}). Process or DELETE one, or wait for it to expire."))
     upload_id = str(uuid.uuid4())
     pending_uploads[upload_id] = {
         "user_id": user_id,
@@ -3842,6 +3893,9 @@ async def create_upload(request: Request):
     }
 
 
+_UPLOAD_WRITE_BATCH = 1024 * 1024
+
+
 @app.put("/api/uploads/{upload_id}")
 async def put_upload(upload_id: str, request: Request):
     """Receive the raw video body for a reserved slot. Streams to disk, capped
@@ -3851,15 +3905,35 @@ async def put_upload(upload_id: str, request: Request):
         pending_uploads.pop(upload_id, None)
         raise HTTPException(status_code=404, detail="Unknown or expired upload_id")
     limit_bytes = MAX_FILE_SIZE_MB * 1024 * 1024
+    loop = asyncio.get_running_loop()
+    # A second PUT rewrites the file, so the slot is not usable until it ends.
+    slot["complete"] = False
     size = 0
-    with open(slot["path"], "wb") as out:
-        async for chunk in request.stream():
-            size += len(chunk)
-            if size > limit_bytes:
-                out.close()
-                os.remove(slot["path"])
-                raise HTTPException(status_code=413, detail=f"File too large. Max size {MAX_FILE_SIZE_MB}MB")
-            out.write(chunk)
+    try:
+        out = await loop.run_in_executor(None, open, slot["path"], "wb")
+        try:
+            # Disk writes go through the executor so a slow disk does not stall
+            # every other request, and are batched so a 2 GB upload is not
+            # tens of thousands of thread hand-offs.
+            buf = bytearray()
+            async for chunk in request.stream():
+                size += len(chunk)
+                if size > limit_bytes:
+                    raise HTTPException(status_code=413, detail=f"File too large. Max size {MAX_FILE_SIZE_MB}MB")
+                buf += chunk
+                if len(buf) >= _UPLOAD_WRITE_BATCH:
+                    await loop.run_in_executor(None, out.write, bytes(buf))
+                    buf.clear()
+            if buf:
+                await loop.run_in_executor(None, out.write, bytes(buf))
+        finally:
+            await loop.run_in_executor(None, out.close)
+    except BaseException:
+        # Too large, the client went away mid-body (cancelled), or the disk
+        # failed: never leave a half-written file behind.
+        with suppress(OSError):
+            os.remove(slot["path"])
+        raise
     if size == 0:
         os.remove(slot["path"])
         raise HTTPException(status_code=400, detail="Empty body")
@@ -4448,7 +4522,7 @@ def _presented_status(job_id, job):
     return job['status']
 
 
-@app.get("/api/status/{job_id}")
+@app.get("/api/status/{job_id}", dependencies=[Depends(valid_job_id)])
 async def get_status(job_id: str, request: Request):
     job = jobs.get(job_id)
     if job is None:
@@ -4483,9 +4557,14 @@ def _locate_source_for_range(job_id: str, start=None, end=None):
     that start. Without a range, the first piece stands for "a source exists".
     Either way it ages out with the normal retention caps.
     """
+    # Job ids are uuid4 strings. Anything else is not a job: "pending" would
+    # otherwise glob another user's reserved upload (pending_<id>_<name>), and
+    # "../x" would walk out of OUTPUT_DIR.
+    if not _is_uuid_id(job_id):
+        return None, 0.0
     matches = [
         f for f in glob.glob(os.path.join(UPLOAD_DIR, f"{glob.escape(job_id)}_*"))
-        if not os.path.basename(f).startswith("thumb_")
+        if not os.path.basename(f).startswith(("thumb_", "pending_"))
     ]
     if matches:
         return matches[0], 0.0
@@ -4581,7 +4660,7 @@ def _signed_source_url(job_id: str, start=None, end=None) -> str:
     return f"/api/source/{job_id}?exp={exp}&sig={_source_signature(job_id, exp)}{span}"
 
 
-@app.get("/api/source-url/{job_id}")
+@app.get("/api/source-url/{job_id}", dependencies=[Depends(valid_job_id)])
 async def get_source_url(job_id: str, request: Request):
     """Mint a short-lived signed URL for this job's source video.
 
@@ -4605,7 +4684,7 @@ async def get_source_url(job_id: str, request: Request):
     return {"url": _signed_source_url(job_id)}
 
 
-@app.get("/api/source/{job_id}")
+@app.get("/api/source/{job_id}", dependencies=[Depends(valid_job_id)])
 async def get_source_video(job_id: str, request: Request,
                            exp: int = 0, sig: str = "",
                            start: Optional[float] = None, end: Optional[float] = None):
@@ -4644,7 +4723,7 @@ async def get_source_video(job_id: str, request: Request,
     return FileResponse(source_path, media_type="video/mp4")
 
 
-@app.get("/api/jobs/{job_id}/download-all")
+@app.get("/api/jobs/{job_id}/download-all", dependencies=[Depends(valid_job_id)])
 async def download_all_clips(job_id: str, request: Request):
     """Bundle the current version of every clip of a job into one ZIP."""
     await _ensure_job_files(job_id, request)
@@ -4708,7 +4787,7 @@ async def download_all_clips(job_id: str, request: Request):
     return FileResponse(
         zip_path,
         media_type="application/zip",
-        filename=f"openshorts_clips_{job_id[:8]}.zip",
+        filename=f"silentshorts_clips_{job_id[:8]}.zip",
         background=BackgroundTask(remove_zip),
     )
 
@@ -4723,7 +4802,7 @@ _restore_locks: Dict[str, asyncio.Lock] = {}
 _JOB_ID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
 
 
-@app.post("/api/projects/{job_id}/restore")
+@app.post("/api/projects/{job_id}/restore", dependencies=[Depends(valid_job_id)])
 async def restore_project(job_id: str, request: Request):
     if not BILLING_ENABLED:
         raise HTTPException(status_code=404, detail="Not found")
@@ -5124,7 +5203,7 @@ class SubtitleRequest(BaseModel):
     words: Optional[List[CaptionWordIn]] = None
 
 
-@app.get("/api/clip/{job_id}/{clip_index}/transcript")
+@app.get("/api/clip/{job_id}/{clip_index}/transcript", dependencies=[Depends(valid_job_id)])
 async def get_clip_transcript(job_id: str, clip_index: int, request: Request):
     """Return word-level captions for a specific clip, formatted for Remotion."""
     await _ensure_job_files(job_id, request)
@@ -5217,7 +5296,7 @@ def _clip_recipe_parts(clip):
     return segments, canonical_range
 
 
-@app.get("/api/clip/{job_id}/{clip_index}/edl")
+@app.get("/api/clip/{job_id}/{clip_index}/edl", dependencies=[Depends(valid_job_id)])
 async def get_clip_edl(job_id: str, clip_index: int, request: Request):
     """The clip's editable recipe: which source segments it was cut from, the
     word timeline around them, and whether the source is still available for
@@ -5556,7 +5635,7 @@ def _clip_scene_workfile(source_path, segments, output_dir, token):
     return work_path
 
 
-@app.get("/api/clip/{job_id}/{clip_index}/scenes")
+@app.get("/api/clip/{job_id}/{clip_index}/scenes", dependencies=[Depends(valid_job_id)])
 async def get_clip_scenes(job_id: str, clip_index: int, request: Request):
     """Scenes of a clip, each with a SOURCE frame to frame it against.
 
@@ -7167,7 +7246,7 @@ async def post_to_socials(req: SocialPostRequest, request: Request):
         # The upload is a blocking multipart POST of the whole clip (tens of
         # seconds for TikTok+YouTube). Run inline, it froze the event loop:
         # 23-sep-2026 19:47:48 UTC one post stalled every request, /health
-        # included, for 42 s and the uptime monitor paged "openshorts-api
+        # included, for 42 s and the uptime monitor paged "silentshorts-api
         # down". It runs in a worker thread so the API keeps answering.
         print(f"📡 Sending to Upload-Post for platforms: {req.platforms}")
         response = await asyncio.to_thread(
@@ -7370,7 +7449,7 @@ async def _social_analytics_auth(request: Request, byok_profile: Optional[str]):
         if BILLING_ENABLED:
             # Signed-in free user (or no auth at all): social posting is
             # paid-only in cloud, so there are no posts to measure either.
-            raise payment_required("no_plan", "Social analytics needs an active OpenShorts plan.")
+            raise payment_required("no_plan", "Social analytics needs an active SilentShorts plan.")
         raise HTTPException(status_code=400, detail="Missing X-Upload-Post-Key header")
     if forced_profile:
         user = await _user_from_request(request)
@@ -7441,7 +7520,7 @@ async def social_total_impressions(
     breakdown: Optional[bool] = None,
     user: Optional[str] = None,
 ):
-    """Views of the posts published through OpenShorts in a window.
+    """Views of the posts published through SilentShorts in a window.
 
     Computed by aggregating the profile-scoped post cache instead of proxying
     Upload-Post's /total-impressions: that endpoint echoes the requested
@@ -7556,7 +7635,7 @@ async def _scheduled_posts_for(api_key: str, profile: str) -> list:
 
     Upload-Post's GET /uploadposts/schedule takes no profile filter and returns
     everything the *account* has pending — with the managed key that is every
-    OpenShorts user's queue, so the filter below is what keeps one tenant from
+    SilentShorts user's queue, so the filter below is what keeps one tenant from
     seeing (or cancelling) another's. Same class of bug as the impressions
     endpoint; do not "simplify" it away.
     """
@@ -7633,7 +7712,7 @@ async def _probe_thumbnail_url(request, url, user):
     if balance["remaining"] < 1:
         _maybe_send_quota_email(user)
         raise payment_required(
-            "quota_exceeded", "The user is out of OpenShorts processing minutes for this period.",
+            "quota_exceeded", "The user is out of SilentShorts processing minutes for this period.",
             minutes_required=1, minutes_remaining=balance["remaining"])
     _check_probe_rate(user.id)
     paid_allowed = not await _paid_proxy_budget_exceeded()
@@ -7984,7 +8063,7 @@ async def _thumbnail_text_gate(request, session):
             _maybe_send_quota_email(user)
             raise payment_required(
                 "quota_exceeded",
-                "The user is out of OpenShorts minutes; analyze a video to get title suggestions.",
+                "The user is out of SilentShorts minutes; analyze a video to get title suggestions.",
                 minutes_required=1, minutes_remaining=balance["remaining"])
     times.append(now)
 
@@ -8694,11 +8773,11 @@ async def saasshorts_post_to_socials(req: SaaSPostRequest, request: Request):
 # The gallery and the per-video pages are rendered by this API service, but the
 # app they advertise lives on www. A relative href on `api.` host resolves
 # against `api.`, where `/` is not the app (it is a 404), so every link that
-# crosses hosts is written absolute. `www.openshorts.app/gallery` and
+# crosses hosts is written absolute. `www.drunktrader.dev/gallery` and
 # `/video/...` 301 to the api host (dashboard/nginx.conf), so the api host is
 # the final domain for those two and the app host is final for everything else.
-APP_HOST = "https://www.openshorts.app"
-GALLERY_HOST = "https://api.openshorts.app"
+APP_HOST = "https://www.drunktrader.dev"
+GALLERY_HOST = "https://api.drunktrader.dev"
 
 
 def _json_ld(payload: dict) -> str:
@@ -8798,11 +8877,11 @@ async def gallery_html_page():
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI UGC Video Gallery | OpenShorts</title>
+<title>AI UGC Video Gallery | SilentShorts</title>
 <meta name="description" content="Browse {len(videos)} AI-generated UGC marketing videos. Create viral TikTok and Instagram Reels for your SaaS product.">
 <meta name="robots" content="{UGC_ROBOTS}">
 <link rel="canonical" href="{GALLERY_HOST}/gallery">
-<meta property="og:title" content="AI UGC Video Gallery | OpenShorts">
+<meta property="og:title" content="AI UGC Video Gallery | SilentShorts">
 <meta property="og:type" content="website">
 <meta property="og:description" content="Browse AI-generated UGC marketing videos for SaaS products.">
 <script type="application/ld+json">{ld_json}</script>
@@ -8817,7 +8896,7 @@ h1{{font-size:28px;font-weight:700;padding:40px 20px 0;text-align:center}}
 </style>
 </head>
 <body>
-<nav><strong style="font-size:18px">OpenShorts</strong><a href="{APP_HOST}/" class="cta">Create Your Video</a></nav>
+<nav><strong style="font-size:18px">SilentShorts</strong><a href="{APP_HOST}/" class="cta">Create Your Video</a></nav>
 <h1>AI-Generated UGC Videos</h1>
 <p class="subtitle">{len(videos)} videos generated · Low Cost & Premium modes</p>
 <div class="grid">{cards_html}</div>
@@ -8888,7 +8967,7 @@ async def video_html_page(video_id: str):
 <html lang="{language}">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title} - AI UGC Video | OpenShorts</title>
+<title>{title} - AI UGC Video | SilentShorts</title>
 <meta name="description" content="{caption} {hashtags}">
 <meta name="robots" content="{UGC_ROBOTS}">
 <link rel="canonical" href="{GALLERY_HOST}/video/{video_id}">
@@ -8922,7 +9001,7 @@ h1{{font-size:22px;font-weight:700;margin-bottom:8px}}
 </style>
 </head>
 <body>
-<nav><strong>OpenShorts</strong><a href="{GALLERY_HOST}/gallery">Gallery</a><span style="color:#3f3f46">›</span><span style="color:#e4e4e7;font-size:14px">{title}</span></nav>
+<nav><strong>SilentShorts</strong><a href="{GALLERY_HOST}/gallery">Gallery</a><span style="color:#3f3f46">›</span><span style="color:#e4e4e7;font-size:14px">{title}</span></nav>
 <div class="container">
 <div><video src="{video_url}" poster="{actor_url}" controls autoplay playsinline style="aspect-ratio:9/16;object-fit:cover"></video></div>
 <div>

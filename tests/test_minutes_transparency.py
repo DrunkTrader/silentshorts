@@ -287,14 +287,14 @@ def _saturate_editor_budget(monkeypatch, key):
     monkeypatch.setattr(app_module, "_ensure_job_files", _noop)
     monkeypatch.setattr(app_module, "_owner_id", _owner)
     monkeypatch.setattr(app_module, "_user_from_request", _user)
-    monkeypatch.setitem(app_module.jobs, "job-rl", {"user_id": "u1", "status": "completed"})
+    monkeypatch.setitem(app_module.jobs, "5a1f0c3e-0000-4000-8000-000000000041", {"user_id": "u1", "status": "completed"})
 
 
 def test_scene_listing_is_capped_per_hour(monkeypatch):
     """Listing scenes cuts the clip from source and runs scene detection."""
     from fastapi.testclient import TestClient
     _saturate_editor_budget(monkeypatch, "scenes:u1")
-    r = TestClient(app_module.app).get("/api/clip/job-rl/0/scenes")
+    r = TestClient(app_module.app).get("/api/clip/5a1f0c3e-0000-4000-8000-000000000041/0/scenes")
     assert r.status_code == 429
 
 
@@ -302,7 +302,7 @@ def test_scene_listing_has_its_own_budget(monkeypatch):
     """Opening the framing editor must not eat the budget of the edits."""
     from fastapi.testclient import TestClient
     _saturate_editor_budget(monkeypatch, "u1")
-    r = TestClient(app_module.app).get("/api/clip/job-rl/0/scenes")
+    r = TestClient(app_module.app).get("/api/clip/5a1f0c3e-0000-4000-8000-000000000041/0/scenes")
     assert r.status_code != 429
 
 
@@ -310,5 +310,5 @@ def test_caption_removal_is_capped_per_hour(monkeypatch):
     from fastapi.testclient import TestClient
     _saturate_editor_budget(monkeypatch, "u1")
     r = TestClient(app_module.app).post("/api/subtitle/remove",
-                                        json={"job_id": "job-rl", "clip_index": 0})
+                                        json={"job_id": "5a1f0c3e-0000-4000-8000-000000000041", "clip_index": 0})
     assert r.status_code == 429

@@ -1,0 +1,8 @@
+README.md
+silentshorts_cli.py
+pyproject.toml
+silentshorts.egg-info/PKG-INFO
+silentshorts.egg-info/SOURCES.txt
+silentshorts.egg-info/dependency_links.txt
+silentshorts.egg-info/entry_points.txt
+silentshorts.egg-info/top_level.txt

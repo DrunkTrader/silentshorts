@@ -1,0 +1,27 @@
+{
+  "name": "silentshorts",
+  "version": "1.1.0",
+  "description": "Turn long videos (podcasts, webinars, streams) into vertical 9:16 clips with subtitles, re-cut them, and publish them to TikTok, Instagram Reels and YouTube Shorts via the SilentShorts API or MCP server.",
+  "author": {
+    "name": "SilentShorts",
+    "url": "https://www.drunktrader.dev/"
+  },
+  "homepage": "https://github.com/DrunkTrader/silentshorts/tree/main/skills/silentshorts",
+  "repository": "https://github.com/DrunkTrader/silentshorts",
+  "license": "MIT",
+  "keywords": [
+    "video",
+    "clips",
+    "shorts",
+    "reels",
+    "tiktok",
+    "youtube shorts",
+    "subtitles",
+    "social media",
+    "publishing",
+    "automation"
+  ],
+  "skills": [
+    "."
+  ]
+}

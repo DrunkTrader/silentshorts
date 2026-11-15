@@ -39,7 +39,7 @@ output/
 .claude/
 # skills/ holds third-party installs (symlinks); our own published skill is versioned
 skills/*
-!skills/openshorts/
+!skills/silentshorts/
 skills-lock.json
 
 
@@ -56,3 +56,6 @@ osrender/target/
 # Split-screen library import folder (only its README is versioned)
 split_library/*
 !split_library/README.md
+
+# Local agent handoff notes
+HANDOFF_PROMPT.md

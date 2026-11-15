@@ -33,7 +33,7 @@ class TestTransport:
         resp = _post({"jsonrpc": "2.0", "id": 1, "method": "initialize",
                       "params": {"protocolVersion": "2025-06-18"}})
         assert resp.status_code == 200
-        assert resp.json()["result"]["serverInfo"]["name"] == "openshorts"
+        assert resp.json()["result"]["serverInfo"]["name"] == "silentshorts"
 
     def test_notification_gets_202(self):
         resp = _post({"jsonrpc": "2.0", "method": "notifications/initialized"})
@@ -53,14 +53,14 @@ class TestTransport:
 
 class TestToolsThroughRealEndpoints:
     def test_get_job_status_of_a_real_in_memory_job(self):
-        app_module.jobs["mcp-test-job"] = {
+        app_module.jobs["5a1f0c3e-0000-4000-8000-000000000031"] = {
             "status": "completed",
             "logs": ["line"] * 30,
-            "result": {"clips": [{"title": "A clip", "video_url": "/videos/mcp-test-job/c1.mp4",
+            "result": {"clips": [{"title": "A clip", "video_url": "/videos/5a1f0c3e-0000-4000-8000-000000000031/c1.mp4",
                                   "start": 10.0, "end": 25.5}]},
         }
         try:
-            resp = _call("get_job_status", {"job_id": "mcp-test-job"})
+            resp = _call("get_job_status", {"job_id": "5a1f0c3e-0000-4000-8000-000000000031"})
             result = resp.json()["result"]
             assert result["isError"] is False
             data = result["structuredContent"]
@@ -68,10 +68,10 @@ class TestToolsThroughRealEndpoints:
             assert len(data["recent_logs"]) == 10  # agents get the tail, not 30 lines
             assert data["clips"][0]["duration_seconds"] == 15.5
         finally:
-            app_module.jobs.pop("mcp-test-job", None)
+            app_module.jobs.pop("5a1f0c3e-0000-4000-8000-000000000031", None)
 
     def test_unknown_job_is_a_tool_error_not_a_crash(self):
-        resp = _call("get_job_status", {"job_id": "no-such-job"})
+        resp = _call("get_job_status", {"job_id": "5a1f0c3e-0000-4000-8000-000000000032"})
         result = resp.json()["result"]
         assert result["isError"] is True
         assert result["structuredContent"]["http_status"] == 404
@@ -120,7 +120,7 @@ class TestCloudModeAuth:
         monkeypatch.setattr(cloud_auth, "get_current_user_optional", fake_user)
         resp = _post({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
         assert resp.status_code == 200
-        assert resp.json()["result"]["serverInfo"]["name"] == "openshorts"
+        assert resp.json()["result"]["serverInfo"]["name"] == "silentshorts"
 
 
 class TestWebhookSigning:

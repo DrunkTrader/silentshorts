@@ -583,7 +583,7 @@ def test_clip_has_approval_buttons_and_upload_posts_exact_contract(tmp_path):
     assert datas == [f"u:{JOB}:0", f"k:{JOB}:0", f"t:{JOB}:0", f"q:{JOB}:0"]
     press(r, f"u:{JOB}:0", wait=True)
     post = r.named("POST /webhook/abc-secret-path")[0]
-    assert post.headers["X-OpenShorts-Secret"] == SECRET
+    assert post.headers["X-SilentShorts-Secret"] == SECRET
     assert post.headers["content-type"].startswith("multipart/form-data")
     f = multipart_fields(post)
     assert set(f) == {"video", "title", "description", "tags", "privacy", "job_id", "clip_index"}
@@ -1168,7 +1168,7 @@ def test_schedule_persists_and_fires_the_exact_contract_once(tmp_path):
     due(r2)
     due(r2)
     (post,) = r2.named(HOOK)
-    assert post.headers["X-OpenShorts-Secret"] == SECRET
+    assert post.headers["X-SilentShorts-Secret"] == SECRET
     f = multipart_fields(post)
     assert set(f) == {"video", "title", "description", "tags", "privacy", "job_id", "clip_index"}
     assert f["video"] == b"MP4DATA" and f["title"] == b"Big title" and f["privacy"] == b"unlisted"

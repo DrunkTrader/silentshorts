@@ -12,7 +12,7 @@ import pytest
 
 app_module = pytest.importorskip("app")
 
-JOB = "keepjob"
+JOB = "5a1f0c3e-0000-4000-8000-000000000011"
 OLD = 3 * 24 * 3600
 KEPT_FILE = "subtitled_200_hooked_100_base_clip_2.mp4"
 

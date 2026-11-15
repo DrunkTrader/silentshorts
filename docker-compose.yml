@@ -1,9 +1,12 @@
 services:
   backend:
     build: .
-    container_name: openshorts-backend
+    container_name: silentshorts-backend
     ports:
-      - "8000:8000"
+      # Loopback only: the API has no login in self-host mode. To reach it from
+      # another machine put a reverse proxy with authentication in front, or
+      # change this to "8000:8000" knowing anyone on the network can use it.
+      - "127.0.0.1:8000:8000"
     volumes:
       - .:/app
       - /app/__pycache__
@@ -14,9 +17,11 @@ services:
     build:
       context: ./dashboard
       target: dev
-    container_name: openshorts-frontend
+    container_name: silentshorts-frontend
     ports:
-      - "5175:5173"
+      # Loopback only: the dev server proxies /api to the backend, so exposing
+      # it exposes the API too (see the backend note above).
+      - "127.0.0.1:5175:5173"
     volumes:
       - ./dashboard:/app
       - /app/node_modules
@@ -28,9 +33,9 @@ services:
     build:
       context: .
       dockerfile: render-service/Dockerfile
-    container_name: openshorts-renderer
+    container_name: silentshorts-renderer
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
     volumes:
       - ./output:/output
     environment:

@@ -1,29 +1,29 @@
-# OpenShorts + n8n
+# SilentShorts + n8n
 
 Importable workflows, from a one-shot clipper to a full channel autopilot.
-The first two work out of the box with [OpenShorts Cloud](https://www.openshorts.app/)
-(free tier: 20 min of video, paid plans from $12/mo). OpenShorts is also open
+The first two work out of the box with [SilentShorts Cloud](https://www.drunktrader.dev/)
+(free tier: 20 min of video, paid plans from $12/mo). SilentShorts is also open
 source: self-hosters can point either workflow at their own instance by
 changing the base URL (needs a GPU box, your own Gemini key, and your own
 [Upload-Post](https://www.upload-post.com/) account for the posting steps).
 
 | Workflow | What it does | Credentials |
 |---|---|---|
-| `openshorts-clip-and-notify.json` | A video URL goes in through a form, clips come back on a signed webhook. No polling. | OpenShorts API key |
-| `openshorts-content-machine.json` | Your YouTube channel on autopilot: daily clipping, approval buttons in Telegram, drip-scheduled posting, weekly analytics digest. | OpenShorts API key + Telegram bot |
-| `openshorts-telegram-drive-youtube.json` | Self-host: a clip approved in the OpenShorts Telegram bot goes to Google Drive, then YouTube ([setup](#self-host-telegram-approval--drive--youtube)). | Google Drive + YouTube OAuth |
+| `silentshorts-clip-and-notify.json` | A video URL goes in through a form, clips come back on a signed webhook. No polling. | SilentShorts API key |
+| `silentshorts-content-machine.json` | Your YouTube channel on autopilot: daily clipping, approval buttons in Telegram, drip-scheduled posting, weekly analytics digest. | SilentShorts API key + Telegram bot |
+| `silentshorts-telegram-drive-youtube.json` | Self-host: a clip approved in the SilentShorts Telegram bot goes to Google Drive, then YouTube ([setup](#self-host-telegram-approval--drive--youtube)). | Google Drive + YouTube OAuth |
 
 ## Shared setup
 
 1. In n8n: **Workflows → Import from file** → pick the workflow.
-2. Create a **Header Auth** credential named `OpenShorts API key`:
+2. Create a **Header Auth** credential named `SilentShorts API key`:
    - Name: `Authorization`
    - Value: `Bearer osk_...` (create the key in your account page at
-     [openshorts.app](https://www.openshorts.app/))
+     [drunktrader.dev](https://www.drunktrader.dev/))
 3. Open the **Clips ready (webhook)** node, copy its production URL, and paste
-   it as `webhook_url` inside the **Start OpenShorts job** node body.
-4. Optional: change `webhook_secret`. OpenShorts signs the webhook body with
-   HMAC-SHA256 and sends it as `X-OpenShorts-Signature: sha256=<hex>`; verify
+   it as `webhook_url` inside the **Start SilentShorts job** node body.
+4. Optional: change `webhook_secret`. SilentShorts signs the webhook body with
+   HMAC-SHA256 and sends it as `X-SilentShorts-Signature: sha256=<hex>`; verify
    it in a Code node with:
 
    ```javascript
@@ -36,7 +36,7 @@ changing the base URL (needs a GPU box, your own Gemini key, and your own
 
 ## The Content Machine
 
-`openshorts-content-machine.json` runs your channel in four acts:
+`silentshorts-content-machine.json` runs your channel in four acts:
 
 1. **Watch** — once a day it reads your channel's RSS feed
    (`https://www.youtube.com/feeds/videos.xml?channel_id=UC...`) and clips
@@ -49,7 +49,7 @@ changing the base URL (needs a GPU box, your own Gemini key, and your own
    back to a link message with the same buttons.
 3. **Drip-publish** — each approved clip takes the next free daily slot and is
    scheduled through `POST /api/social/post` to every account you connected in
-   OpenShorts (TikTok, Instagram, YouTube). Approve five clips today, fill five
+   SilentShorts (TikTok, Instagram, YouTube). Approve five clips today, fill five
    days of content. The slot comes from the queue the server actually holds
    (`GET /api/social/scheduled`), so two clips approved seconds apart cannot
    book the same one.
@@ -64,7 +64,7 @@ Machine-specific setup, all inside sticky notes on the canvas:
   `Telegram bot` credential, and replace `YOUR_TELEGRAM_CHAT_ID` in the
   notification nodes (message your bot, then check
   `api.telegram.org/bot<token>/getUpdates` for your chat id).
-- Connect your social accounts in your OpenShorts account page (Cloud) — the
+- Connect your social accounts in your SilentShorts account page (Cloud) — the
   posting step uses them directly; no extra social credentials in n8n.
 
 Note: the machine remembers which videos it already processed in n8n workflow
@@ -100,14 +100,14 @@ Publishing queue: `GET /api/social/scheduled`, and
 Analytics of what you published: `GET /api/social/analytics` (profile totals),
 `GET /api/social/analytics/posts` (per-post metrics),
 `GET /api/social/analytics/impressions` (windowed totals, `period=last_week`).
-Full API reference: [api.openshorts.app/docs](https://api.openshorts.app/docs).
+Full API reference: [api.drunktrader.dev/docs](https://api.drunktrader.dev/docs).
 Agent-native version of the same pipeline (MCP):
-[openshorts.app/mcp](https://www.openshorts.app/mcp).
+[drunktrader.dev/mcp](https://www.drunktrader.dev/mcp).
 
 ## Self-host: Telegram approval → Drive → YouTube
 
-`openshorts-telegram-drive-youtube.json` receives a clip you approved in the
-OpenShorts Telegram bot, stores it in a Google Drive folder, uploads it to
+`silentshorts-telegram-drive-youtube.json` receives a clip you approved in the
+SilentShorts Telegram bot, stores it in a Google Drive folder, uploads it to
 YouTube, and answers the bot with both links:
 
 ```json
@@ -122,7 +122,7 @@ wrong secret, 400 for a bad field, 200 when Drive or YouTube refuses the upload.
 ```bash
 cd examples/n8n/selfhost
 cp .env.example .env
-python -c "import secrets;print(secrets.token_urlsafe(32))"   # paste as OPENSHORTS_WEBHOOK_SECRET
+python -c "import secrets;print(secrets.token_urlsafe(32))"   # paste as SILENTSHORTS_WEBHOOK_SECRET
 docker compose up -d
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5678/healthz   # 200
 ```
@@ -168,23 +168,23 @@ name), each with the client id and secret above, then **Sign in with Google**:
 Open **Upload to Drive** and **Upload to YouTube** once and check the
 credential is selected.
 
-### 4. Folder, activation, OpenShorts
+### 4. Folder, activation, SilentShorts
 
 1. In **Upload to Drive**, replace `PASTE_YOUR_DRIVE_FOLDER_ID_HERE` with the
    folder id (what follows `/folders/` in the folder's URL). Files are named
    `<job_id>_<clip_index>.mp4`.
 2. Activate (publish) the workflow.
-3. In OpenShorts' `.env`:
+3. In SilentShorts' `.env`:
 
    ```
-   N8N_WEBHOOK_SECRET=<the same value as OPENSHORTS_WEBHOOK_SECRET>
-   N8N_UPLOAD_WEBHOOK_URL=http://127.0.0.1:5678/webhook/openshorts-youtube-upload
+   N8N_WEBHOOK_SECRET=<the same value as SILENTSHORTS_WEBHOOK_SECRET>
+   N8N_UPLOAD_WEBHOOK_URL=http://127.0.0.1:5678/webhook/silentshorts-youtube-upload
    ```
 
-   If OpenShorts itself runs in Docker, `127.0.0.1` is its own container: use
+   If SilentShorts itself runs in Docker, `127.0.0.1` is its own container: use
    an address that container can reach instead.
 
-The secret travels in the `X-OpenShorts-Secret` header and is compared in
+The secret travels in the `X-SilentShorts-Secret` header and is compared in
 constant time; the `Check secret and validate` node reads it from n8n's
 environment (hence `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` in the compose file).
 

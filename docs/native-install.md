@@ -1,4 +1,4 @@
-# Running OpenShorts without Docker
+# Running SilentShorts without Docker
 
 Docker stays the supported path. This page covers running the backend and the
 dashboard directly on Linux (including aarch64) and on Windows.

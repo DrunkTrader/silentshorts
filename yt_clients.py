@@ -50,7 +50,7 @@ def cookies_path() -> str:
         return explicit
     if os.path.isdir("/app") and os.access("/app", os.W_OK):
         return "/app/cookies.txt"
-    return os.path.join(tempfile.gettempdir(), "openshorts_cookies.txt")
+    return os.path.join(tempfile.gettempdir(), "silentshorts_cookies.txt")
 
 
 class NotASingleVideo(ValueError):

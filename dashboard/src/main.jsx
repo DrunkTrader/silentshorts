@@ -24,7 +24,7 @@ function PageShell({ title, children }) {
     <div className="min-h-screen bg-paper text-ink2">
       <SkipLink />
       <header className="h-14 sm:h-16 border-b border-rule bg-paper flex items-center justify-between gap-3 px-4 sm:px-6 sticky top-0 z-20">
-        <a href="#app" className="font-display lowercase text-lg text-ink truncate">OpenShorts</a>
+        <a href="#app" className="font-display lowercase text-lg text-ink truncate">SilentShorts</a>
         <nav aria-label="Site" className="flex items-center gap-2 shrink-0">
           <ThemeToggle />
           <a href="#app" className="text-sm lowercase text-muted hover:text-ink transition-colors">← <span className="hidden sm:inline">Back to app</span><span className="sm:hidden">back</span></a>
@@ -104,7 +104,7 @@ function DeletedView() {
           You're welcome back any time — signing up again with the same address
           starts a brand-new, empty account.
         </p>
-        <a href="#landing" className="btn-ghost px-4 py-2 inline-flex">Back to openshorts.app</a>
+        <a href="#landing" className="btn-ghost px-4 py-2 inline-flex">Back to drunktrader.dev</a>
       </div>
     </div>
   );

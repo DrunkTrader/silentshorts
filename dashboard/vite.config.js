@@ -31,8 +31,8 @@ export default defineConfig({
   },
   server: {
     allowedHosts: [
-      'openshorts.app',
-      'www.openshorts.app'
+      'drunktrader.dev',
+      'www.drunktrader.dev'
     ],
     proxy: {
       '/api': { target: backend, changeOrigin: true },

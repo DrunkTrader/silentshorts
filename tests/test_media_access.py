@@ -239,3 +239,16 @@ class TestRenderBody:
             "videoUrl": f"https://api.example.test{CLIP}?mt=abc.123.def"}}
         asyncio.run(app_module._check_render_body(None, body))
         assert body["props"]["videoUrl"] == f"https://api.example.test{CLIP}"
+
+
+class TestOwnerCacheEviction:
+    def test_a_full_cache_drops_only_its_older_half(self):
+        cache = {f"job{i}": (f"owner{i}", None, float(i)) for i in range(10)}
+        app_module._evict_oldest_half(cache)
+        assert sorted(cache) == [f"job{i}" for i in range(5, 10)]
+
+    def test_eviction_keeps_the_newest_entries_whatever_the_insert_order(self):
+        cache = {"new": ("a", None, 99.0), "old": ("b", None, 1.0),
+                 "mid": ("c", None, 50.0), "older": ("d", None, 0.5)}
+        app_module._evict_oldest_half(cache)
+        assert sorted(cache) == ["mid", "new"]

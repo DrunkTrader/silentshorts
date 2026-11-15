@@ -63,7 +63,7 @@ def test_cookies_path_falls_back_to_temp_dir_without_app(monkeypatch, tmp_path):
     monkeypatch.setattr(yt_clients.os.path, "isdir", lambda p: False)
     monkeypatch.setattr(yt_clients.tempfile, "gettempdir", lambda: str(tmp_path))
     path = yt_clients.cookies_path()
-    assert path == str(tmp_path / "openshorts_cookies.txt")
+    assert path == str(tmp_path / "silentshorts_cookies.txt")
     monkeypatch.setenv("COOKIES_FILE", "/x/c.txt")
     assert yt_clients.cookies_path() == "/x/c.txt"
 

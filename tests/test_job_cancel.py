@@ -8,11 +8,17 @@ import shutil
 import subprocess
 import time
 import types
+import uuid
 
 import httpx
 import pytest
 
 app_module = pytest.importorskip("app")
+
+
+def _done_id(status):
+    """A stable uuid4-shaped job id per status (job ids are uuid4 strings)."""
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"done-{status}"))
 
 
 @pytest.fixture
@@ -89,7 +95,7 @@ def test_queued_job_is_cancelled_released_and_never_started(env, monkeypatch):
     root, calls = env
     monkeypatch.setattr(app_module, "BILLING_ENABLED", True)
     monkeypatch.setattr(app_module, "_assert_job_owner", _no_owner_check)
-    d, job = _job(root, "q1")
+    d, job = _job(root, "5a1f0c3e-0000-4000-8000-000000000021")
     started = []
 
     async def spy_wrapper(job_id):
@@ -98,9 +104,9 @@ def test_queued_job_is_cancelled_released_and_never_started(env, monkeypatch):
     monkeypatch.setattr(app_module, "run_job_wrapper", spy_wrapper)
 
     async def go():
-        app_module.job_queue.put_nowait((2, 0, "q1"))
-        r = await _req("POST", "/api/jobs/q1/cancel")
-        assert r.status_code == 200 and r.json() == {"job_id": "q1", "status": "cancelled"}
+        app_module.job_queue.put_nowait((2, 0, "5a1f0c3e-0000-4000-8000-000000000021"))
+        r = await _req("POST", "/api/jobs/5a1f0c3e-0000-4000-8000-000000000021/cancel")
+        assert r.status_code == 200 and r.json() == {"job_id": "5a1f0c3e-0000-4000-8000-000000000021", "status": "cancelled"}
         worker = asyncio.create_task(app_module.process_queue())
         await asyncio.sleep(0.05)
         worker.cancel()
@@ -111,8 +117,8 @@ def test_queued_job_is_cancelled_released_and_never_started(env, monkeypatch):
     assert job["status"] == "cancelled" and app_module.CANCEL_MESSAGE in list(job["logs"])
     assert not (d / app_module._RESUME_FILE).exists()
     assert (d / app_module._CANCELLED_FILE).exists()
-    assert calls["released"] == ["res-q1"] and calls["committed"] == []
-    assert calls["webhooks"] == ["q1"]
+    assert calls["released"] == ["res-5a1f0c3e-0000-4000-8000-000000000021"] and calls["committed"] == []
+    assert calls["webhooks"] == ["5a1f0c3e-0000-4000-8000-000000000021"]
 
 
 async def _no_owner_check(request, record):
@@ -122,7 +128,7 @@ async def _no_owner_check(request, record):
 def test_cancel_while_waiting_for_a_slot_never_starts(env, monkeypatch):
     """Dequeued and waiting on the semaphore when the cancel lands."""
     root, calls = env
-    _job(root, "q2")
+    _job(root, "5a1f0c3e-0000-4000-8000-000000000022")
     started = []
 
     async def spy_wrapper(job_id):
@@ -133,11 +139,11 @@ def test_cancel_while_waiting_for_a_slot_never_starts(env, monkeypatch):
         sem = asyncio.Semaphore(1)
         await sem.acquire()   # every slot busy
         monkeypatch.setattr(app_module, "concurrency_semaphore", sem)
-        app_module.job_queue.put_nowait((2, 0, "q2"))
+        app_module.job_queue.put_nowait((2, 0, "5a1f0c3e-0000-4000-8000-000000000022"))
         worker = asyncio.create_task(app_module.process_queue())
         await asyncio.sleep(0.02)
-        assert "q2" in app_module._admitting
-        assert (await _req("POST", "/api/jobs/q2/cancel")).status_code == 200
+        assert "5a1f0c3e-0000-4000-8000-000000000022" in app_module._admitting
+        assert (await _req("POST", "/api/jobs/5a1f0c3e-0000-4000-8000-000000000022/cancel")).status_code == 200
         sem.release()
         await asyncio.sleep(0.05)
         worker.cancel()
@@ -172,21 +178,21 @@ def test_running_job_process_is_killed_and_job_settled(env, monkeypatch):
         killed.append(process)
         process.kill()
     monkeypatch.setattr(app_module, "_kill_job_process", fake_kill)
-    d, job = _job(root, "r1")
+    d, job = _job(root, "5a1f0c3e-0000-4000-8000-000000000023")
 
     async def go():
         sem = asyncio.Semaphore(1)
         await sem.acquire()
         monkeypatch.setattr(app_module, "concurrency_semaphore", sem)
-        app_module.job_queue.put_nowait((2, 0, "r1"))
+        app_module.job_queue.put_nowait((2, 0, "5a1f0c3e-0000-4000-8000-000000000023"))
         await app_module.job_queue.get()
-        wrapper = asyncio.create_task(app_module.run_job_wrapper("r1"))
+        wrapper = asyncio.create_task(app_module.run_job_wrapper("5a1f0c3e-0000-4000-8000-000000000023"))
         for _ in range(100):
-            if "r1" in app_module._job_processes:
+            if "5a1f0c3e-0000-4000-8000-000000000023" in app_module._job_processes:
                 break
             await asyncio.sleep(0.01)
         assert job["status"] == "processing" and job.get("started_at")
-        r = await _req("POST", "/api/jobs/r1/cancel")
+        r = await _req("POST", "/api/jobs/5a1f0c3e-0000-4000-8000-000000000023/cancel")
         assert r.status_code == 200
         await asyncio.wait_for(wrapper, 10)
         assert sem.locked() is False   # the slot is free again
@@ -195,8 +201,8 @@ def test_running_job_process_is_killed_and_job_settled(env, monkeypatch):
     assert job["status"] == "cancelled"   # not "failed" from exit code -9
     assert calls["enqueued"] == []        # so no auto-retry
     assert not (d / app_module._RESUME_FILE).exists()
-    assert calls["released"] == ["res-r1"] and calls["committed"] == []
-    assert "r1" not in app_module._job_processes
+    assert calls["released"] == ["res-5a1f0c3e-0000-4000-8000-000000000023"] and calls["committed"] == []
+    assert "5a1f0c3e-0000-4000-8000-000000000023" not in app_module._job_processes
 
 
 def test_cancel_lands_before_the_process_exists(env, monkeypatch):
@@ -241,10 +247,10 @@ def _gone(pid, seconds=3.0):
 # --- refusals -----------------------------------------------------------------
 def test_unknown_404_and_finished_409(env):
     root, _ = env
-    assert _call("POST", "/api/jobs/nope/cancel").status_code == 404
+    assert _call("POST", "/api/jobs/5a1f0c3e-0000-4000-8000-000000000025/cancel").status_code == 404
     for st in ("completed", "failed", "cancelled"):
-        _d, job = _job(root, f"done-{st}", status=st)
-        r = _call("POST", f"/api/jobs/done-{st}/cancel")
+        _d, job = _job(root, _done_id(st), status=st)
+        r = _call("POST", f"/api/jobs/{_done_id(st)}/cancel")
         assert r.status_code == 409 and st in r.json()["detail"]
         assert job["status"] == st
 
@@ -253,12 +259,12 @@ def test_non_owner_is_refused(env, monkeypatch):
     root, calls = env
     caller = {"id": "user-b"}
     _billing(monkeypatch, caller)
-    d, job = _job(root, "own1", user_id="user-a")
-    assert _call("POST", "/api/jobs/own1/cancel").status_code == 404
+    d, job = _job(root, "5a1f0c3e-0000-4000-8000-000000000024", user_id="user-a")
+    assert _call("POST", "/api/jobs/5a1f0c3e-0000-4000-8000-000000000024/cancel").status_code == 404
     assert job["status"] == "queued" and (d / app_module._RESUME_FILE).exists()
     assert calls["released"] == []
     caller["id"] = "user-a"
-    assert _call("POST", "/api/jobs/own1/cancel").status_code == 200
+    assert _call("POST", "/api/jobs/5a1f0c3e-0000-4000-8000-000000000024/cancel").status_code == 200
 
 
 # --- the drain path is unchanged -----------------------------------------------

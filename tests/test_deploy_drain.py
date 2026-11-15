@@ -42,9 +42,9 @@ def _manifest(out, job_id, **extra):
 
 class TestHeartbeat:
     def test_touch_stamps_instance_and_time(self, out):
-        _manifest(out, "j1")
-        app_module._touch_manifest("j1", now=1000.0)
-        m = app_module._read_manifest("j1")
+        _manifest(out, "5a1f0c3e-0000-4000-8000-000000000051")
+        app_module._touch_manifest("5a1f0c3e-0000-4000-8000-000000000051", now=1000.0)
+        m = app_module._read_manifest("5a1f0c3e-0000-4000-8000-000000000051")
         assert m["instance"] == "me" and m["heartbeat"] == 1000.0
 
     def test_fresh_heartbeat_from_another_instance_is_busy(self, out):
@@ -67,10 +67,10 @@ class TestHeartbeat:
 
 class TestResumeScan:
     def test_busy_elsewhere_is_skipped_but_reservation_kept(self, out):
-        _manifest(out, "j1", instance="other", heartbeat=time.time())
+        _manifest(out, "5a1f0c3e-0000-4000-8000-000000000051", instance="other", heartbeat=time.time())
         keep = app_module._resume_interrupted_jobs()
-        assert "j1" not in app_module.jobs
-        assert keep == {"res-j1"}, "the other instance's job must not be refunded as an orphan"
+        assert "5a1f0c3e-0000-4000-8000-000000000051" not in app_module.jobs
+        assert keep == {"res-5a1f0c3e-0000-4000-8000-000000000051"}, "the other instance's job must not be refunded as an orphan"
 
     def test_stale_and_never_started_are_resumed(self, out):
         _manifest(out, "stale", instance="other", heartbeat=time.time() - 600)
@@ -82,11 +82,11 @@ class TestResumeScan:
         assert app_module._read_manifest("stale")["attempts"] == 1
 
     def test_a_job_we_already_hold_is_not_enqueued_twice(self, out):
-        _manifest(out, "j1")
-        app_module.jobs["j1"] = {"status": "processing", "logs": []}
+        _manifest(out, "5a1f0c3e-0000-4000-8000-000000000051")
+        app_module.jobs["5a1f0c3e-0000-4000-8000-000000000051"] = {"status": "processing", "logs": []}
         app_module._resume_interrupted_jobs()
         assert app_module.job_queue.qsize() == 0
-        assert app_module._read_manifest("j1")["attempts"] == 0
+        assert app_module._read_manifest("5a1f0c3e-0000-4000-8000-000000000051")["attempts"] == 0
 
     def test_poison_job_is_dropped_and_refundable(self, out):
         _manifest(out, "bad", attempts=app_module.MAX_RESUME_ATTEMPTS)
@@ -108,7 +108,7 @@ class TestDrain:
         assert app_module._draining is False
 
     def test_scan_stays_quiet_while_draining(self, out):
-        _manifest(out, "j1")
+        _manifest(out, "5a1f0c3e-0000-4000-8000-000000000051")
         app_module._begin_drain("test")
         # The draining instance must not adopt manifests: they belong to the
         # next one. (_resume_scan checks the flag; the worker drops dispatches.)
@@ -116,12 +116,12 @@ class TestDrain:
 
     def test_exit_waits_for_running_jobs_then_hands_the_signal_on(self, out):
         calls = []
-        app_module._running_jobs.add("j1")
+        app_module._running_jobs.add("5a1f0c3e-0000-4000-8000-000000000051")
 
         async def scenario():
             async def finish_soon():
                 await asyncio.sleep(0.2)
-                app_module._running_jobs.discard("j1")
+                app_module._running_jobs.discard("5a1f0c3e-0000-4000-8000-000000000051")
             asyncio.create_task(finish_soon())
             t = time.time()
             await app_module._drain_then_exit(lambda sig, frame: calls.append(sig),
@@ -194,32 +194,32 @@ class TestStatusFromDisk:
                                  base_url="http://t")
 
     def test_unknown_job_with_live_manifest_is_processing(self, out):
-        _manifest(out, "j1", instance="other", heartbeat=time.time())
+        _manifest(out, "5a1f0c3e-0000-4000-8000-000000000051", instance="other", heartbeat=time.time())
 
         async def go():
             async with self._client() as c:
-                return await c.get("/api/status/j1")
+                return await c.get("/api/status/5a1f0c3e-0000-4000-8000-000000000051")
         r = asyncio.run(go())
         assert r.status_code == 200
         assert r.json()["status"] == "processing"
 
     def test_unknown_job_with_idle_manifest_is_queued(self, out):
-        _manifest(out, "j1")
+        _manifest(out, "5a1f0c3e-0000-4000-8000-000000000051")
 
         async def go():
             async with self._client() as c:
-                return await c.get("/api/status/j1")
+                return await c.get("/api/status/5a1f0c3e-0000-4000-8000-000000000051")
         r = asyncio.run(go())
         assert r.json()["status"] == "queued"
 
     def test_unknown_job_with_metadata_is_completed(self, out):
-        d = out / "j1"
+        d = out / "5a1f0c3e-0000-4000-8000-000000000051"
         d.mkdir()
         (d / "vid_metadata.json").write_text(json.dumps({"shorts": [{"start": 0, "end": 1}]}))
 
         async def go():
             async with self._client() as c:
-                return await c.get("/api/status/j1")
+                return await c.get("/api/status/5a1f0c3e-0000-4000-8000-000000000051")
         r = asyncio.run(go())
         assert r.json()["status"] == "completed"
         assert r.json()["result"]["clips"]
@@ -227,14 +227,14 @@ class TestStatusFromDisk:
     def test_truly_unknown_job_is_404(self, out):
         async def go():
             async with self._client() as c:
-                return await c.get("/api/status/nope")
+                return await c.get("/api/status/5a1f0c3e-0000-4000-8000-000000000052")
         assert asyncio.run(go()).status_code == 404
 
     def test_queued_here_but_started_elsewhere_reads_processing(self, out):
-        _manifest(out, "j1", instance="other", heartbeat=time.time())
-        app_module.jobs["j1"] = {"status": "queued", "logs": ["Job queued"]}
+        _manifest(out, "5a1f0c3e-0000-4000-8000-000000000051", instance="other", heartbeat=time.time())
+        app_module.jobs["5a1f0c3e-0000-4000-8000-000000000051"] = {"status": "queued", "logs": ["Job queued"]}
         app_module._begin_drain("test")
-        assert app_module._presented_status("j1", app_module.jobs["j1"]) == "processing"
+        assert app_module._presented_status("5a1f0c3e-0000-4000-8000-000000000051", app_module.jobs["5a1f0c3e-0000-4000-8000-000000000051"]) == "processing"
 
 
 class TestSharedGpu:

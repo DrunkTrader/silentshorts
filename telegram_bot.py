@@ -1,6 +1,6 @@
 """Telegram intake bot (self-host): send a link or a video, get clips back.
 
-Long polling over httpx, no bot framework. It talks to OpenShorts only through
+Long polling over httpx, no bot framework. It talks to SilentShorts only through
 the loopback HTTP API, so every API guard (SSRF check, acknowledgement, rate
 limits, signed media URLs, owner checks) stays in force. Separate from the
 admin-alert bot in cloud/alerts.py: its own token, never shared.
@@ -495,7 +495,7 @@ class IntakeBot:
         """(items, None) from the API, or (None, reason)."""
         status, body = await self._api(c, "GET", "/api/slot-uploads")
         if status != 200:
-            return None, "OpenShorts is not reachable" if status == 0 else self._detail(body)
+            return None, "SilentShorts is not reachable" if status == 0 else self._detail(body)
         return [i for i in body.get("items") or [] if isinstance(i, dict)], None
 
     async def _check_split_src(self, c, panel):
@@ -780,7 +780,7 @@ class IntakeBot:
             _unlink(tmp)
         if status == 200 and isinstance(body.get("id"), str):
             return body, None
-        return None, "OpenShorts is not reachable" if status == 0 else self._detail(body)
+        return None, "SilentShorts is not reachable" if status == 0 else self._detail(body)
 
     async def _save_video(self, c, chat_id, doc, rest):
         name = preset_name(rest)
@@ -817,7 +817,7 @@ class IntakeBot:
             status, body = await self._api(c, "POST", "/api/slot-uploads", data={"url": url},
                                            timeout=1800)
             if status != 200 or not isinstance(body.get("id"), str):
-                reason = "OpenShorts is not reachable" if status == 0 else self._detail(body)
+                reason = "SilentShorts is not reachable" if status == 0 else self._detail(body)
                 return await self._say(c, chat_id, f"Could not use that link: {reason}")
             await self._use_src(c, chat_id, mid, body)
 
@@ -866,7 +866,7 @@ class IntakeBot:
     async def _queued(self, c, chat_id, status, body, settings):
         job_id = body.get("job_id") if isinstance(body, dict) else None
         if status != 200 or not job_id:
-            reason = "OpenShorts is not reachable" if status == 0 else self._detail(body)
+            reason = "SilentShorts is not reachable" if status == 0 else self._detail(body)
             return await self._say(c, chat_id, f"Could not queue it: {reason}")
         self.data["job_settings"][job_id] = dict(settings)
         self._remember(chat_id, job_id)
@@ -943,7 +943,7 @@ class IntakeBot:
                 return fresh[i], None   # carries the signed download_url
             return {**clip, "video_url": new, "download_url": None}, None
         reason = (self._detail(body) if 400 <= status < 500 else
-                  "OpenShorts is not reachable" if status == 0 else "the render failed")
+                  "SilentShorts is not reachable" if status == 0 else "the render failed")
         return clip, f"Split screen failed ({self._safe(reason)[:150]}), so this is the plain clip."
 
     async def _deliver(self, c, chat_id, i, clip, job_id=None, note=None):
@@ -1244,7 +1244,7 @@ class IntakeBot:
         rec = self.data["clips"][key]
         job_id, i = key.rsplit(":", 1)[0], rec["i"]
         settings = clean_settings(self.data["job_settings"].get(job_id))
-        result = {"ok": False, "error": "could not read the clip from OpenShorts"}
+        result = {"ok": False, "error": "could not read the clip from SilentShorts"}
         async with self.client_factory() as c:
             status, body = await self._api(c, "GET", f"/api/status/{job_id}")
             clips = ((body.get("result") or {}).get("clips") or []) if status == 200 else []
@@ -1257,7 +1257,7 @@ class IntakeBot:
                 try:
                     r = await c.post(
                         self.n8n_url, timeout=600,
-                        headers={"X-OpenShorts-Secret": self.n8n_secret},
+                        headers={"X-SilentShorts-Secret": self.n8n_secret},
                         data={"title": rec["title"][:TITLE_CHARS], "description": desc,
                               "tags": tags, "privacy": settings["priv"],
                               "job_id": job_id, "clip_index": str(i)},
@@ -1294,7 +1294,7 @@ class IntakeBot:
     async def _jobs_view(self, c):
         status, body = await self._api(c, "GET", "/api/jobs/active")
         if status != 200:
-            reason = "OpenShorts is not reachable" if status == 0 else self._detail(body)
+            reason = "SilentShorts is not reachable" if status == 0 else self._detail(body)
             return f"Could not list jobs: {reason}", None
         rows = [j for j in body.get("jobs") or [] if isinstance(j, dict)
                 and _JOB_RE.match(str(j.get("job_id")))]
@@ -1371,7 +1371,7 @@ class IntakeBot:
             return "Cancelled."
         if where == "s":
             await self._keys(c, chat_id, mid, [])
-        return "OpenShorts is not reachable." if status == 0 else self._detail(body)[:150]
+        return "SilentShorts is not reachable." if status == 0 else self._detail(body)[:150]
 
     # --- scheduling -----------------------------------------------------
     def _need_profile(self):

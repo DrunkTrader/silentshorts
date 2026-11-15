@@ -171,7 +171,7 @@ private anyway). Times are in `TELEGRAM_TIMEZONE`.
 The webhook contract (fixed with the n8n workflow):
 
 - `POST` multipart/form-data to `N8N_UPLOAD_WEBHOOK_URL`, header
-  `X-OpenShorts-Secret: <N8N_WEBHOOK_SECRET>`, timeout 10 minutes.
+  `X-SilentShorts-Secret: <N8N_WEBHOOK_SECRET>`, timeout 10 minutes.
 - Fields: `video` (the mp4, fetched from the local API), `title` (100 chars
   max), `description` (the clip's description, else its title; 5000 chars
   max), `tags` (the description's hashtags, comma-separated, may be empty),

@@ -19,7 +19,7 @@ import pytest
 
 app_module = pytest.importorskip("app")
 
-JOB_ID = "source-access-test-job"
+JOB_ID = "5a1f0c3e-0000-4000-8000-000000000004"
 
 
 def _get(path):
@@ -94,7 +94,7 @@ class TestSelfHostStaysOpen:
     def test_missing_source_is_a_404_not_a_500(self, tmp_path, monkeypatch):
         monkeypatch.setattr(app_module, "OUTPUT_DIR", str(tmp_path))
         monkeypatch.setattr(app_module, "UPLOAD_DIR", str(tmp_path))
-        assert _get("/api/source/nobody-home").status_code == 404
+        assert _get("/api/source/5a1f0c3e-0000-4000-8000-0000000000ff").status_code == 404
 
 
 class TestSignature:
@@ -186,9 +186,9 @@ class TestSourceUrlNeverMintsBlind:
         # keep working, so an unknown id is not something to refuse.
         monkeypatch.setattr(app_module, "OUTPUT_DIR", str(tmp_path))
         monkeypatch.setattr(app_module, "UPLOAD_DIR", str(tmp_path))
-        r = _get("/api/source-url/nobody-home")
+        r = _get("/api/source-url/5a1f0c3e-0000-4000-8000-0000000000ff")
         assert r.status_code == 200
-        assert r.json()["url"] == "/api/source/nobody-home"
+        assert r.json()["url"] == "/api/source/5a1f0c3e-0000-4000-8000-0000000000ff"
 
     def test_cloud_refuses_instead_of_signing(self, tmp_path, monkeypatch):
         # With billing on, an unresolvable job used to get a valid capability
@@ -202,7 +202,7 @@ class TestSourceUrlNeverMintsBlind:
         monkeypatch.setattr(app_module, "UPLOAD_DIR", str(tmp_path))
         monkeypatch.setattr(app_module, "BILLING_ENABLED", True)
         monkeypatch.setattr(app_module, "_signed_source_url", lambda j: f"/signed/{j}")
-        assert _get("/api/source-url/nobody-home").status_code == 404
+        assert _get("/api/source-url/5a1f0c3e-0000-4000-8000-0000000000ff").status_code == 404
 
     def test_cloud_still_serves_the_owner(self, job, monkeypatch):
         # The job fixture stamps user_id None (self-host style), which
@@ -213,3 +213,76 @@ class TestSourceUrlNeverMintsBlind:
         r = _get(f"/api/source-url/{JOB_ID}")
         assert r.status_code == 200
         assert r.json()["url"] == f"/signed/{JOB_ID}"
+
+
+class TestIdsThatAreNotJobs:
+    """Reserved upload slots sit in uploads/ as pending_<uuid>_<name>, and the
+    source lookup globs uploads/<job_id>_*. An id like "pending" used to match
+    that glob and stream another user's unpublished upload to anyone, with no
+    login. Only uuid4 ids are jobs."""
+
+    @pytest.fixture()
+    def cloud_with_pending_upload(self, tmp_path, monkeypatch):
+        uploads = tmp_path / "uploads"
+        uploads.mkdir()
+        (tmp_path / "output").mkdir()
+        (uploads / "pending_aaaa_secret.mp4").write_bytes(b"VICTIM-BYTES")
+        monkeypatch.setattr(app_module, "OUTPUT_DIR", str(tmp_path / "output"))
+        monkeypatch.setattr(app_module, "UPLOAD_DIR", str(uploads))
+        monkeypatch.setattr(app_module, "BILLING_ENABLED", True)
+        monkeypatch.setattr(app_module, "jobs", {})
+
+        async def nobody(request):
+            return None
+        monkeypatch.setattr(app_module, "_user_from_request", nobody)
+        return uploads
+
+    @pytest.mark.parametrize("bad_id", ["pending", "pending_aaaa", "..", "x", "A" * 36])
+    def test_source_refuses_ids_that_are_not_uuids(self, cloud_with_pending_upload, bad_id):
+        r = _get(f"/api/source/{bad_id}")
+        assert r.status_code == 404
+        assert b"VICTIM" not in r.content
+
+    @pytest.mark.parametrize("bad_id", ["pending", "..", "x"])
+    def test_source_url_refuses_ids_that_are_not_uuids(self, cloud_with_pending_upload, bad_id):
+        assert _get(f"/api/source-url/{bad_id}").status_code == 404
+
+    def test_self_host_refuses_them_too(self, cloud_with_pending_upload, monkeypatch):
+        # A path-shaped id is never a job, billing or not.
+        monkeypatch.setattr(app_module, "BILLING_ENABLED", False)
+        assert _get("/api/source/pending").status_code == 404
+
+    def test_locator_never_returns_a_pending_upload(self, cloud_with_pending_upload):
+        assert app_module._locate_source_for_range("pending") == (None, 0.0)
+        assert app_module._locate_source_for_range("pending_aaaa") == (None, 0.0)
+
+    def test_locator_skips_pending_files_even_for_a_uuid_prefix(self, tmp_path, monkeypatch):
+        uploads = tmp_path / "uploads"
+        uploads.mkdir()
+        monkeypatch.setattr(app_module, "UPLOAD_DIR", str(uploads))
+        monkeypatch.setattr(app_module, "OUTPUT_DIR", str(tmp_path / "output"))
+        (uploads / f"pending_{JOB_ID}_clip.mp4").write_bytes(b"x")
+        assert app_module._locate_source_for_range(JOB_ID) == (None, 0.0)
+
+
+@pytest.mark.parametrize("method,path", [
+    ("get", "/api/status/pending"),
+    ("post", "/api/jobs/pending/cancel"),
+    ("get", "/api/jobs/pending/download-all"),
+    ("post", "/api/jobs/pending/clips/0/keep"),
+    ("delete", "/api/jobs/pending/clips/0/keep"),
+    ("post", "/api/projects/pending/restore"),
+    ("get", "/api/clip/pending/0/transcript"),
+    ("get", "/api/clip/pending/0/edl"),
+    ("get", "/api/clip/pending/0/scenes"),
+])
+def test_every_job_path_route_refuses_a_non_uuid_id(method, path):
+    """The check is a route dependency (valid_job_id), so a route that reaches
+    a job's files cannot forget it."""
+    async def _do():
+        transport = httpx.ASGITransport(app=app_module.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as c:
+            return await getattr(c, method)(path)
+    r = asyncio.run(_do())
+    assert r.status_code == 404
+    assert r.json() == {"detail": "Not found"}

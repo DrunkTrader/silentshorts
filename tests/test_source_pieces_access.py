@@ -13,7 +13,7 @@ import source_ranges
 app = pytest.importorskip("app")
 import recut  # noqa: E402
 
-JOB = "pieces-job"
+JOB = "5a1f0c3e-0000-4000-8000-000000000005"
 PIECES = [{"file": "T.piece_1.mp4", "start": 90.0, "end": 140.0},
           {"file": "T.piece_2.mp4", "start": 390.0, "end": 450.0}]
 
