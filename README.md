@@ -1,12 +1,12 @@
-# SilentShorts.app
+# SilentShorts
 
-**The open-source OpusClip alternative.** Turn long videos into viral 9:16 Shorts, TikToks and Reels. Self-host free (MIT) or use the hosted cloud.
+**The open-source OpusClip alternative.** Turn long videos into viral 9:16 Shorts, TikToks and Reels. Self-host it for free (MIT).
 
 | | SilentShorts | OpusClip | Vizard | Klap |
 |---|---|---|---|---|
 | Open source | Yes (MIT) | No | No | No |
 | Self-hostable | Yes (Docker) | No | No | No |
-| Free without watermark | Yes, self-hosted | No | No | No |
+| Free without watermark | Yes | No | No | No |
 | API + MCP server | Yes | API | API | API |
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -24,27 +24,11 @@
 
 Two people on camera? SilentShorts stacks them instead of shrinking the wide shot, puts the captions on the seam where they cover nobody, and switches back to a face-tracked crop when the cut goes to one person. The AI picks the layout per video; nothing to configure.
 
-**Cloud version:** don't want to run it yourself? [SilentShorts Cloud](https://www.drunktrader.dev/?ref=github) is the same software on a GPU. Free plan with a watermark (20 min/mo, no credit card), paid plans from $12/mo with no watermark.
-
-**Two ways to run it, same software either way:**
-
-|  | Self-hosted (this repo) | Hosted on [drunktrader.dev](https://www.drunktrader.dev/) |
-|---|---|---|
-| **Price** | Free forever, MIT | Free plan, paid from $12/mo |
-| **Speed** | 5 to 8 min per 8-min video on CPU | About 50s on our NVIDIA GPU |
-| **API keys** | Bring your own Gemini, ElevenLabs, fal.ai | Gemini included, nothing to set up |
-| **Watermark / limits** | None, ever | Watermark and 20 min/mo on the free plan, neither on paid |
-| **Setup** | Docker, 8GB+ RAM, model downloads | Sign in and paste a link |
-| **MCP / API for agents** | Same `/mcp` endpoint, but only while your machine is on | Always-on endpoint at [mcp.drunktrader.dev](https://www.drunktrader.dev/mcp), API keys in one click |
-| **Your data** | Your server | Ours |
-
-Self-hosting is genuinely free and always will be. It costs you a machine, your own API keys and the time to keep it running. The hosted plans exist to cover that hardware and those keys, not to unlock features.
-
-**Compared to Opus Clip, Klap, Vizard** (public pricing pages, checked October 2026; full breakdown at [drunktrader.dev/alternatives](https://www.drunktrader.dev/alternatives)):
+**Compared to Opus Clip, Klap, Vizard** (public pricing pages, checked October 2026):
 
 | | Free plan | Paid from | Open source |
 |---|---|---|---|
-| **SilentShorts** | Self-hosted: free, no watermark, no cap. Cloud: 20 min/mo with watermark | $12/mo (Cloud, 100 min) | **Yes, MIT** |
+| **SilentShorts** | Free, no watermark, no cap (you bring the machine and your own API keys) | Nothing to pay | **Yes, MIT** |
 | **Opus Clip** | 60 min/mo, watermarked, export within 3 days | $15/mo (Starter, 150 min), billed per minute of source | No |
 | **Klap** | 1 video to try, no ongoing free plan | $14/mo billed yearly (100 clips), billed per clip | No |
 | **Vizard** | 60 min/mo, 720p, watermarked | $14.50/mo billed yearly ($29 monthly), billed per minute uploaded | No |
@@ -107,7 +91,7 @@ All generated videos and avatars are saved to a public gallery with SEO pages fo
 - **Runs fully local if you want**: point `LLM_BASE_URL` at Ollama, LM Studio, vLLM or any OpenAI-compatible server and the moment picker runs on your own model, no Google key needed (see [Run without a Google key](#6-run-without-a-google-key-local-llm-optional))
 - **Smart 9:16 Cropping**: AI reframing per scene — TRACK mode (MediaPipe + YOLOv8 face tracking), GENERAL mode (blurred background), SPLIT mode (two speakers stacked, captions on the seam) and SCREENCAST mode (screen over presenter); the layout is picked per video by Gemini or forced from the dashboard
 - **Auto Subtitles**: faster-whisper with word-level timestamps, styled and burned into clips
-- **AI Voice Dubbing**: ElevenLabs integration for 30+ languages with voice cloning (bring your own ElevenLabs key, on the cloud too)
+- **AI Voice Dubbing**: ElevenLabs integration for 30+ languages with voice cloning (bring your own ElevenLabs key)
 - **Hook Text Overlays**: AI-generated attention-grabbing text overlays
 - **AI Video Effects**: Gemini-generated FFmpeg filters for professional effects
 
@@ -159,10 +143,10 @@ Videos generated with SilentShorts AI Shorts — no camera, no studio, no actors
 
 | | | |
 |:---:|:---:|:---:|
-| [![Biohacking for Investors](https://test-videos-upload-post.s3.eu-west-3.amazonaws.com/videos/cdceec1b/actor.png)](https://drunktrader.dev/video/cdceec1b) | [![Secret Weapon for Devs](https://test-videos-upload-post.s3.eu-west-3.amazonaws.com/videos/d3a80b6b/actor.png)](https://drunktrader.dev/video/d3a80b6b) | [![El Secreto de los Agentes de IA](https://test-videos-upload-post.s3.eu-west-3.amazonaws.com/videos/8ab7de92/actor.png)](https://drunktrader.dev/video/8ab7de92) |
+| ![Biohacking for Investors](https://test-videos-upload-post.s3.eu-west-3.amazonaws.com/videos/cdceec1b/actor.png) | ![Secret Weapon for Devs](https://test-videos-upload-post.s3.eu-west-3.amazonaws.com/videos/d3a80b6b/actor.png) | ![El Secreto de los Agentes de IA](https://test-videos-upload-post.s3.eu-west-3.amazonaws.com/videos/8ab7de92/actor.png) |
 | **Biohacking for Investors** · LOW COST | **Secret Weapon for Devs** · LOW COST | **El Secreto de los Agentes de IA** · PREMIUM |
 
-> Browse all videos at [drunktrader.dev/gallery](https://drunktrader.dev/gallery)
+> Your own videos are listed in the gallery at `http://localhost:8000/gallery`
 
 ---
 
@@ -170,11 +154,11 @@ Videos generated with SilentShorts AI Shorts — no camera, no studio, no actors
 
 | Feature | SilentShorts | Opus Clip | CapCut | Vizard | Klap | Descript |
 |---------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Price** | **Free self-hosted**<br>from $12/mo hosted | $15-29/mo | $8/mo | $14.50/mo yearly<br>$29 monthly | from $14/mo yearly | $24-65/mo |
+| **Price** | **Free** | $15-29/mo | $8/mo | $14.50/mo yearly<br>$29 monthly | from $14/mo yearly | $24-65/mo |
 | **Self-hosted** | **Yes** | No | No | No | No | No |
 | **Open source** | **Yes** | No | No | No | No | No |
-| **Watermark** | **Never self-hosted**<br>free plan only when hosted | Free tier | Some | Free tier | No free plan<br>(1 trial video) | Free tier |
-| **Upload limits** | **None self-hosted**<br>by plan when hosted | 10-30GB | Credit-based | 60min-10hr | 10-100 vids/mo | 60min-40hr |
+| **Watermark** | **Never** | Free tier | Some | Free tier | No free plan<br>(1 trial video) | Free tier |
+| **Upload limits** | **None** | 10-30GB | Credit-based | 60min-10hr | 10-100 vids/mo | 60min-40hr |
 | **AI clip detection** | Yes | Yes | Yes | Yes | Yes | Yes |
 | **Smart 9:16 reframing** | Yes | Yes | Yes | Yes | Yes | No |
 | **Auto subtitles** | Yes | Yes | Yes | Yes | Yes | Yes |
@@ -204,8 +188,6 @@ Self-hosting SilentShorts is free. You provide the machine and you only pay for 
 | **AWS S3** | Optional | ~$0.023/GB | Cloud backup for clips and gallery |
 
 **Bottom line:** You can clip videos for practically free with Gemini, and publish 10 videos/month to all social networks at zero cost with Upload-Post.
-
-**Don't want to run any of that?** [drunktrader.dev](https://www.drunktrader.dev/) is the same software on our hardware: our NVIDIA GPU clips an 8-minute video in about 50 seconds instead of the 5 to 8 minutes it takes on a typical CPU, the Gemini key is included, and auto-publishing is already wired up. Free plan is 20 minutes a month with a watermark and no credit card; paid plans start at $12/mo for 100 minutes without watermark.
 
 ---
 
@@ -363,34 +345,28 @@ You don't need the dashboard. The whole pipeline is callable by AI agents and sc
 
 SilentShorts ships a built-in [MCP](https://modelcontextprotocol.io) server, so Claude, ChatGPT, Cursor or any MCP client can clip and publish videos for you:
 
-**claude.ai and ChatGPT**: paste `https://mcp.drunktrader.dev/mcp` as a custom connector (Settings → Connectors) and approve the access on drunktrader.dev. The server does OAuth 2.1 with dynamic client registration, so there is no key to copy; the connection shows up under Account → API keys, where revoking it disconnects the app.
-
 ```bash
-# Claude Code / Cursor / n8n (hosted): create an API key in your account page
-claude mcp add --transport http silentshorts https://mcp.drunktrader.dev/mcp \
-  --header "Authorization: Bearer osk_..."
-
-# Self-hosted (no key needed, BYOK rules apply):
+# Claude Code / Cursor / n8n (no key needed, BYOK rules apply):
 claude mcp add --transport http silentshorts http://localhost:8000/mcp
 
-# Self-hosted without running the web server: same tools over stdio
+# Without running the web server: same tools over stdio
 claude mcp add silentshorts -- python mcp_stdio.py
 ```
 
 Tools: `process_video` (URL or `upload_id`; `captions: false` when the source already has subtitles, `auto_hook: false` to skip the hook line, burned by default like the dashboard), `create_upload` (hand the agent a local file: PUT the bytes, then process), `get_job_status`, `list_clips`, `get_quota`, `add_subtitles`, `recut_clip`, `publish_clip`. A prompt like *"clip this podcast and schedule the best 3 to TikTok"* is now a one-liner in your agent of choice.
 
-### REST API + API keys
+### REST API
 
-Hosted accounts can mint `osk_...` API keys (account page). A key authenticates as you everywhere — same plan, same minutes, same job ownership:
+Your instance answers on port 8000 and has no login. The AI key comes from `GEMINI_API_KEY` in `.env`, an `X-Gemini-Key` header on the request, or your local LLM (`LLM_BASE_URL`):
 
 ```bash
-curl -X POST https://api.drunktrader.dev/api/process \
-  -H "Authorization: Bearer osk_..." -H "Content-Type: application/json" \
+curl -X POST http://localhost:8000/api/process \
+  -H "Content-Type: application/json" -H "X-Gemini-Key: $GEMINI_API_KEY" \
   -d '{"url": "https://youtube.com/watch?v=...", "acknowledged": true,
        "webhook_url": "https://your-server.com/hooks/silentshorts"}'
 ```
 
-Interactive docs at `/docs` (OpenAPI) on any instance.
+Interactive docs at `/docs` (OpenAPI).
 
 ### Completion webhooks
 
@@ -410,8 +386,7 @@ The same API from the terminal, zero dependencies (`cli/`):
 ```bash
 pip install silentshorts   # or: uvx silentshorts
 
-export SILENTSHORTS_API_KEY=osk_...              # hosted
-# export SILENTSHORTS_API_URL=http://localhost:8000   # self-hosted, no key
+export SILENTSHORTS_API_URL=http://localhost:8000   # point the CLI at your instance
 
 silentshorts process "https://youtube.com/watch?v=..." --wait
 silentshorts clips <job_id>
@@ -517,4 +492,4 @@ Contributions are welcome! Whether it's adding new AI models, improving the lip-
 
 MIT License for the core application — SilentShorts is yours to use, modify, and scale.
 
-**Exception:** the [`cloud/`](cloud/LICENSE) directory (billing, managed keys, and the hosted-service infrastructure behind the optional `BILLING_ENABLED` flag) is source-available under the SilentShorts Commercial License. You can read it, modify it, and self-host it for personal or internal use, but you can't offer it to third parties as a paid/hosted service. Self-hosting the core app never requires this directory.
+The `cloud/` directory is not part of the self-hosted app and is under a separate license: see [NOTICE](NOTICE).
