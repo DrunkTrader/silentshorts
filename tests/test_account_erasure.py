@@ -8,9 +8,9 @@ year from now is exactly the kind of thing nobody remembers to add here.
 import hashlib
 import os
 
-from cloud import account
-from cloud.database import Base
-from cloud.models import AccountDeletion, User
+from silentshorts.cloud import account
+from silentshorts.cloud.database import Base
+from silentshorts.cloud.models import AccountDeletion, User
 
 
 def _tables_referencing_users():

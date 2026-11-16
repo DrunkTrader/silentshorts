@@ -2,7 +2,7 @@
 import asyncio
 import pytest
 
-alerts = pytest.importorskip("cloud.alerts")
+alerts = pytest.importorskip("silentshorts.cloud.alerts")
 
 
 @pytest.fixture()

@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cloud import analytics
+from silentshorts.cloud import analytics
 
 
 @pytest.fixture

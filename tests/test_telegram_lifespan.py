@@ -4,7 +4,15 @@ import sys
 
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
+import silentshorts.integrations  # noqa: E402
+
+
+def _forget_telegram_bot(monkeypatch):
+    """Unimport the bot: from sys.modules and from its package, which
+    `from silentshorts.integrations import telegram_bot` reads first."""
+    monkeypatch.delitem(sys.modules, "silentshorts.integrations.telegram_bot", raising=False)
+    monkeypatch.delattr(silentshorts.integrations, "telegram_bot", raising=False)
 
 
 def _run_lifespan(monkeypatch, tmp_path, billing, token):
@@ -24,7 +32,7 @@ def _run_lifespan(monkeypatch, tmp_path, billing, token):
         await asyncio.sleep(0)
 
     if token and not billing:
-        import telegram_bot
+        from silentshorts.integrations import telegram_bot
 
         async def rec(is_active=None, env=None):
             calls.append(is_active)
@@ -39,14 +47,14 @@ def test_starts_task_when_token_set_and_billing_off(monkeypatch, tmp_path):
 
 
 def test_nothing_imported_without_token(monkeypatch, tmp_path):
-    monkeypatch.delitem(sys.modules, "telegram_bot", raising=False)
+    _forget_telegram_bot(monkeypatch)
     _run_lifespan(monkeypatch, tmp_path, False, False)
-    assert "telegram_bot" not in sys.modules
+    assert "silentshorts.integrations.telegram_bot" not in sys.modules
 
 
 def test_billing_on_starts_nothing(monkeypatch, tmp_path):
     from types import SimpleNamespace as NS
-    monkeypatch.delitem(sys.modules, "telegram_bot", raising=False)
+    _forget_telegram_bot(monkeypatch)
 
     async def noop(*a, **k):
         return None
@@ -57,4 +65,4 @@ def test_billing_on_starts_nothing(monkeypatch, tmp_path):
     monkeypatch.setattr(app_module, "cloud", stub)
     monkeypatch.setattr(app_module, "_alerts", NS(proxy_watch_loop=noop), raising=False)
     _run_lifespan(monkeypatch, tmp_path, True, True)
-    assert "telegram_bot" not in sys.modules
+    assert "silentshorts.integrations.telegram_bot" not in sys.modules

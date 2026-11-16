@@ -140,7 +140,7 @@ def test_no_cap_without_a_lock_dir(tmp_path):
 
 
 def test_job_env_carries_the_cap(monkeypatch):
-    app_module = pytest.importorskip("app")
+    app_module = pytest.importorskip("silentshorts.api.app")
     base = {"FOO": "1"}
     monkeypatch.delenv("JOB_NVENC_SLOTS", raising=False)
     env = app_module._job_encode_env(base)

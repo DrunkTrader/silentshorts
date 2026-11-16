@@ -32,8 +32,8 @@ sys.stdout = sys.stderr
 
 from starlette.requests import Request  # noqa: E402
 
-import app as app_module  # noqa: E402
-import mcp_server  # noqa: E402
+from silentshorts.api import app as app_module  # noqa: E402
+from silentshorts.api import mcp_server  # noqa: E402
 
 # BYOK credentials reach the tools the same way an HTTP client would send them:
 # as forwarded headers (mcp_server._FORWARD_HEADERS), not as a second code path.

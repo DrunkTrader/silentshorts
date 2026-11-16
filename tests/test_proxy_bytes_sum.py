@@ -3,9 +3,9 @@ import io
 
 import pytest
 
-from cloud import proxy_ledger
+from silentshorts.cloud import proxy_ledger
 
-app = pytest.importorskip("app")
+app = pytest.importorskip("silentshorts.api.app")
 
 
 def _route(winner, paid, label):

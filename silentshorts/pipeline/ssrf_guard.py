@@ -30,7 +30,7 @@ import socket
 import threading
 from urllib.parse import urlparse
 
-from security_utils import _ip_is_public, assert_public_url
+from silentshorts.api.security_utils import _ip_is_public, assert_public_url
 
 _state = threading.local()
 _original_getaddrinfo = socket.getaddrinfo

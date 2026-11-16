@@ -7,7 +7,7 @@ without the FastAPI app or a database.
 """
 import asyncio
 
-from mcp_server import PROTOCOL_VERSIONS, TOOLS, _TOOL_IMPLS, handle_message
+from silentshorts.api.mcp_server import PROTOCOL_VERSIONS, TOOLS, _TOOL_IMPLS, handle_message
 
 
 async def _ok_tool(name, args):
@@ -95,7 +95,7 @@ class TestTools:
 
 class TestClipSummaries:
     def test_source_segments_tell_recut_where_the_clip_is(self):
-        from mcp_server import _clip_summaries
+        from silentshorts.api.mcp_server import _clip_summaries
         clips = _clip_summaries("j", {"clips": [
             {"start": 10.0, "end": 40.5, "video_url": "/videos/j/a.mp4"},
             {"start": 5, "end": 30, "recipe": {"segments": [
@@ -124,7 +124,7 @@ class TestExpiredJobs:
                                  base_url="http://api"), calls
 
     def test_a_job_gone_from_disk_is_restored_from_the_archive(self):
-        from mcp_server import _tool_get_job_status
+        from silentshorts.api.mcp_server import _tool_get_job_status
         client, calls = self._client([])
         out, is_error = asyncio.run(_tool_get_job_status(client, {"job_id": "j"}))
         assert not is_error and out["status"] == "completed"
@@ -132,7 +132,7 @@ class TestExpiredJobs:
                          ("GET", "/api/status/j")]
 
     def test_a_live_job_is_not_restored(self):
-        from mcp_server import _tool_get_job_status
+        from silentshorts.api.mcp_server import _tool_get_job_status
         client, calls = self._client([True])
         asyncio.run(_tool_get_job_status(client, {"job_id": "j"}))
         assert calls == [("GET", "/api/status/j")]
@@ -141,7 +141,7 @@ class TestExpiredJobs:
 def test_ids_that_are_not_ids_never_reach_an_api_path():
     """job_id / upload_id are spliced into REST paths; "../" or "?" in one
     would address another endpoint with the caller's credentials."""
-    import mcp_server
+    from silentshorts.api import mcp_server
 
     called = []
 

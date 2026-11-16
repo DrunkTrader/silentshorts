@@ -21,7 +21,7 @@ import asyncio
 import pytest
 from fastapi import HTTPException
 
-import app as app_module
+from silentshorts.api import app as app_module
 
 
 OTHER_TENANT = "os_deadbeefcafe"

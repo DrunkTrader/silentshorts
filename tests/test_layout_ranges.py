@@ -127,7 +127,7 @@ class TestRemapAcrossCut:
 
 class TestLayoutEnvNone:
     def test_none_switches_the_picker_off_for_the_job(self):
-        app_module = pytest.importorskip("app")
+        app_module = pytest.importorskip("silentshorts.api.app")
         assert app_module.layout_env(["none"]) == {"AUTO_LAYOUT": "0"}
         assert app_module.layout_env(["auto"]) == {"AUTO_LAYOUT": "1"}
         assert app_module.layout_env(["split"])["SPLIT_LAYOUT"] == "1"

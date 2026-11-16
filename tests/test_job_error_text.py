@@ -9,8 +9,8 @@ import pytest
 
 # app pulls in dotenv/fastapi/cloud at import time; the minimal CI env lacks
 # them, so skip there. Runs fully in the container/local where deps exist.
-app = pytest.importorskip("app")
-from cloud.alerts import _classify_failure
+app = pytest.importorskip("silentshorts.api.app")
+from silentshorts.cloud.alerts import _classify_failure
 
 
 def _classify(logs):

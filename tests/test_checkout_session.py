@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-billing = pytest.importorskip("cloud.billing")  # needs the stripe SDK
+billing = pytest.importorskip("silentshorts.cloud.billing")  # needs the stripe SDK
 
 ENTRY = {"price_id": "price_s", "kind": "subscription", "plan": "starter",
          "interval": "month", "minutes": 100}

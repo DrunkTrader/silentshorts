@@ -19,8 +19,8 @@ import httpx
 import pytest
 from fastapi import HTTPException
 
-app_module = pytest.importorskip("app")
-from cloud import config  # noqa: E402
+app_module = pytest.importorskip("silentshorts.api.app")
+from silentshorts.cloud import config  # noqa: E402
 
 
 class TestBillableMinutes:

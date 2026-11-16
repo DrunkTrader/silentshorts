@@ -16,8 +16,8 @@ import subprocess
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
-from cloud import config  # noqa: E402
+app_module = pytest.importorskip("silentshorts.api.app")
+from silentshorts.cloud import config  # noqa: E402
 
 
 class TestPartialOffer:
@@ -248,7 +248,7 @@ class TestFirstVideoIpFingerprint:
     """The per-network limit keys on an HMAC of the IP, never the IP."""
 
     def test_stable_and_not_the_ip(self, monkeypatch):
-        from cloud import metering
+        from silentshorts.cloud import metering
         monkeypatch.setenv("JWT_SECRET", "s3cret")
         a = metering.ip_fingerprint("203.0.113.7")
         assert a == metering.ip_fingerprint("203.0.113.7")
@@ -256,7 +256,7 @@ class TestFirstVideoIpFingerprint:
         assert a != metering.ip_fingerprint("203.0.113.8")
 
     def test_unknown_ip_has_no_fingerprint(self):
-        from cloud import metering
+        from silentshorts.cloud import metering
         assert metering.ip_fingerprint("") == ""
         assert metering.ip_fingerprint("unknown") == ""
         assert metering.ip_fingerprint(None) == ""

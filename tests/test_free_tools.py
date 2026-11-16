@@ -10,7 +10,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-import free_tools as ft
+from silentshorts.api import free_tools as ft
 
 
 class TestExtractVideoId:

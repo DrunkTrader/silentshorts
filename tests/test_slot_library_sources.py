@@ -8,7 +8,7 @@ import subprocess
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 from silentshorts.layouts import slot_library  # noqa: E402
 from test_audio_first import YT, fake_ydl  # noqa: E402,F401  (fixture)
 from ydl_fakes import FakeYDL  # noqa: E402
@@ -27,7 +27,7 @@ def _call(method, path, **kw):
 
 @pytest.fixture()
 def lib(tmp_path, monkeypatch):
-    import security_utils
+    from silentshorts.api import security_utils
     monkeypatch.setattr(app_module, "UPLOAD_DIR", str(tmp_path / "uploads"))
     monkeypatch.setattr(app_module, "THUMBNAILS_DIR", str(tmp_path / "thumbs"))
     monkeypatch.setattr(app_module, "SLOT_LIBRARY_IMPORT_DIR", str(tmp_path / "import"))

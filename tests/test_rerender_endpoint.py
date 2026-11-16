@@ -15,7 +15,7 @@ import os
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 from silentshorts.render import recut  # noqa: E402
 
 JOB_ID = "5a1f0c3e-0000-4000-8000-000000000003"
@@ -341,7 +341,7 @@ class TestRerenderPersistence:
 
 class TestMcpTool:
     def test_recut_clip_is_registered(self):
-        import mcp_server
+        from silentshorts.api import mcp_server
         names = [t["name"] for t in mcp_server.TOOLS]
         assert "recut_clip" in names
         assert "recut_clip" in mcp_server._TOOL_IMPLS

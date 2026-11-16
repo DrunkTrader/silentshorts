@@ -43,7 +43,7 @@ class _FakeClient:
 
 
 def _call(**args):
-    from mcp_server import _tool_add_subtitles
+    from silentshorts.api.mcp_server import _tool_add_subtitles
     client = _FakeClient()
     asyncio.run(_tool_add_subtitles(client, {"job_id": "j", "clip_index": 0, **args}))
     return client.body
@@ -66,14 +66,14 @@ def test_mcp_one_word_and_resize_set_the_line_budget():
 def test_unknown_preset_is_a_400():
     import pytest
     from fastapi import HTTPException
-    from app import SubtitleRequest, add_subtitles
+    from silentshorts.api.app import SubtitleRequest, add_subtitles
     with pytest.raises(HTTPException) as exc:
         asyncio.run(add_subtitles(SubtitleRequest(job_id="j", clip_index=0, preset="nope"), None))
     assert exc.value.status_code == 400
 
 
 def test_preset_fills_only_fields_not_sent():
-    from app import SubtitleRequest
+    from silentshorts.api.app import SubtitleRequest
     req = SubtitleRequest(job_id="j", clip_index=0, preset="hormozi", highlight_color="#00FF00")
     merged = req.model_copy(update={k: v for k, v in CAPTION_PRESETS["hormozi"].items()
                                     if k not in req.model_fields_set})

@@ -12,13 +12,13 @@ same directory are still public to whoever has the job id.
 """
 import pytest
 
-media_auth = pytest.importorskip("media_auth")
-restoring_static = pytest.importorskip("restoring_static")
+media_auth = pytest.importorskip("silentshorts.api.media_auth")
+restoring_static = pytest.importorskip("silentshorts.api.restoring_static")
 
 
 class TestTheGuardIsWiredIn:
     def test_the_videos_mount_carries_the_allowlist(self):
-        app = pytest.importorskip("app")
+        app = pytest.importorskip("silentshorts.api.app")
         mount = next(r for r in app.app.routes
                      if getattr(r, "name", None) == "videos")
         # app._media_guard wraps the allowlist (and adds the free-plan rule
@@ -60,7 +60,7 @@ def test_thumbnails_mount_serves_images_only():
     import os
     import shutil
     import uuid
-    app_module = pytest.importorskip("app")
+    app_module = pytest.importorskip("silentshorts.api.app")
     from fastapi.testclient import TestClient
 
     sid = str(uuid.uuid4())

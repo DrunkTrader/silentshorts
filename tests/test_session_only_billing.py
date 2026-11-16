@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 
-from cloud import auth
+from silentshorts.cloud import auth
 
 
 def _request(headers):
@@ -37,8 +37,8 @@ def test_a_session_passes_through(monkeypatch):
 
 
 def test_billing_endpoints_are_session_only():
-    billing = pytest.importorskip("cloud.billing")
-    cancellation = pytest.importorskip("cloud.cancellation")
+    billing = pytest.importorskip("silentshorts.cloud.billing")
+    cancellation = pytest.importorskip("silentshorts.cloud.cancellation")
     for fn in (billing.end_trial, billing.create_portal, billing.list_invoices,
                cancellation.retention_offer, cancellation.accept_retention_offer,
                cancellation.resume_subscription, cancellation.cancel_subscription):
@@ -48,7 +48,7 @@ def test_billing_endpoints_are_session_only():
 
 
 def test_top_ups_are_credited_only_once_paid(monkeypatch):
-    billing = pytest.importorskip("cloud.billing")
+    billing = pytest.importorskip("silentshorts.cloud.billing")
     credited = []
 
     async def _apply(obj):
@@ -67,7 +67,7 @@ def test_top_ups_are_credited_only_once_paid(monkeypatch):
 
 
 def test_webhook_refuses_to_run_without_a_secret(monkeypatch):
-    billing = pytest.importorskip("cloud.billing")
+    billing = pytest.importorskip("silentshorts.cloud.billing")
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     monkeypatch.delenv("STRIPE_WEBHOOK_SECRET", raising=False)

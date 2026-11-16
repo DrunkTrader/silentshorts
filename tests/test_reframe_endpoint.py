@@ -13,7 +13,7 @@ import os
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 from silentshorts.render import recut  # noqa: E402
 
 JOB_ID = "5a1f0c3e-0000-4000-8000-000000000002"

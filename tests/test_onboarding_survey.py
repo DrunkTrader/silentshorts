@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from fastapi import HTTPException
 
-from cloud import onboarding
+from silentshorts.cloud import onboarding
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

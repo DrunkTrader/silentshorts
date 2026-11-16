@@ -5,8 +5,8 @@ pattern as test_mcp_protocol.py.
 """
 import asyncio
 
-import mcp_ui
-from mcp_server import TOOLS, handle_message
+from silentshorts.api import mcp_ui
+from silentshorts.api.mcp_server import TOOLS, handle_message
 
 
 def _run(msg, tool_caller=None):

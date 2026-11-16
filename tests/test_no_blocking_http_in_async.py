@@ -11,7 +11,7 @@ skipped, since those are what gets handed to the thread).
 import ast
 from pathlib import Path
 
-APP = Path(__file__).resolve().parent.parent / "app.py"
+APP = Path(__file__).resolve().parent.parent / "silentshorts" / "api" / "app.py"
 
 
 def _is_blocking_call(node: ast.Call) -> bool:

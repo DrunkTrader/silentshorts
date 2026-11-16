@@ -11,7 +11,7 @@ import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
-from restoring_static import RestoringStaticFiles
+from silentshorts.api.restoring_static import RestoringStaticFiles
 
 JOB = "cff3ad6c-c1e6-48e8-9a75-be74f39779c5"
 
@@ -89,7 +89,7 @@ def test_no_restorer_behaves_like_staticfiles(tmp_path):
 
 def test_app_job_id_guard():
     """The app-side restorer only hits the database for uuid-shaped ids."""
-    app_mod = pytest.importorskip("app")
+    app_mod = pytest.importorskip("silentshorts.api.app")
     assert app_mod._JOB_ID_RE.match(JOB)
     for bad in ("thumbnails", "..", "cff3ad6c", "CFF3AD6C-C1E6-48E8-9A75-BE74F39779C5"):
         assert not app_mod._JOB_ID_RE.match(bad)

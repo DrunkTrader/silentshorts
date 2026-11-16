@@ -11,7 +11,7 @@ import types
 
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 
 OLD = 2 * 3600  # older than JOB_RETENTION_SECONDS in cloud (1 h)
 

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 
 JOB = "5a1f0c3e-0000-4000-8000-000000000011"
 OLD = 3 * 24 * 3600

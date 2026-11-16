@@ -29,7 +29,7 @@ import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
 
-import mcp_ui
+from silentshorts.api import mcp_ui
 from silentshorts.render.subtitles import CAPTION_PRESETS, line_budget
 
 router = APIRouter()
@@ -464,7 +464,7 @@ def _media_secret() -> str:
     if not _billing_enabled():
         return ""
     try:
-        from cloud.config import settings
+        from silentshorts.cloud.config import settings
         return settings.jwt_secret or ""
     except Exception:
         return ""
@@ -477,7 +477,7 @@ def _clip_url(base, rel):
         return rel
     secret = _media_secret()
     if secret:
-        import media_auth
+        from silentshorts.api import media_auth
         return media_auth.sign_absolute_url(base, rel, secret)
     return f"{base}{rel}" if base else rel
 
@@ -537,7 +537,7 @@ async def _tool_get_quota(client, args):
            "upload_post_profile": data.get("upload_post_profile")}
     if data.get("plan") in (None, "free") or not data.get("entitled"):
         # The link an agent hands the user when the free minutes run short.
-        from cloud.config import settings
+        from silentshorts.cloud.config import settings
         out["upgrade_url"] = f"{settings.frontend_url}/#/pricing?plan=starter&src=api"
     return out, False
 
@@ -721,7 +721,7 @@ async def _authorized(request: Request) -> bool:
     key' instead of a per-tool 402. Self-host stays open (BYOK)."""
     if not _billing_enabled():
         return True
-    from cloud.auth import get_current_user_optional
+    from silentshorts.cloud.auth import get_current_user_optional
     return (await get_current_user_optional(request)) is not None
 
 
@@ -731,7 +731,7 @@ async def mcp_endpoint(request: Request):
         # OAuth-capable clients (claude.ai, ChatGPT) read resource_metadata off
         # this header and run the login flow themselves; everyone else gets the
         # API-key hint in the body.
-        from cloud import mcp_oauth
+        from silentshorts.cloud import mcp_oauth
         u = request.base_url
         return JSONResponse(
             {"error": "Authentication required. Connect with OAuth (claude.ai, ChatGPT) "

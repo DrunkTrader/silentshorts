@@ -10,7 +10,7 @@ import os
 
 import pytest
 
-from cloud import metering, proxy_ledger
+from silentshorts.cloud import metering, proxy_ledger
 
 
 def _patch_ydl(monkeypatch, cls):
@@ -168,7 +168,7 @@ def test_alert_folds_a_burst_into_one_message(monkeypatch):
     async def fake_send(text):
         sent.append(text)
 
-    import cloud.alerts as alerts
+    import silentshorts.cloud.alerts as alerts
     monkeypatch.setattr(alerts, "send_telegram", fake_send)
     monkeypatch.setattr(proxy_ledger, "_persist", lambda *a, **k: asyncio.sleep(0))
     proxy_ledger._pending.update(count=0, bytes=0, lines=[], last_sent=0.0)
@@ -191,7 +191,7 @@ def test_host_of_strips_credentials_and_paths():
 
 
 def test_job_source_url_skips_the_interpreter_flag():
-    app = pytest.importorskip("app")
+    app = pytest.importorskip("silentshorts.api.app")
     job = {"cmd": ["/usr/bin/python3", "-u", "main.py", "-u", "https://www.youtube.com/watch?v=x", "-o", "out"]}
     assert app._job_source_url(job) == "https://www.youtube.com/watch?v=x"
     assert app._job_source_url({"cmd": ["/usr/bin/python3", "-u", "main.py", "-i", "file.mp4"]}) is None
@@ -217,7 +217,7 @@ class TestDailyBudget:
 
         async def fake_send(text):
             sent.append(text)
-        import cloud.alerts as alerts
+        import silentshorts.cloud.alerts as alerts
         monkeypatch.setattr(alerts, "send_telegram", fake_send)
         assert asyncio.run(proxy_ledger.budget_exceeded()) is True
         assert asyncio.run(proxy_ledger.budget_exceeded()) is True
@@ -257,7 +257,7 @@ class TestStaticProbeAgainstYouTube:
     the static probe now has to see a playable watch page."""
 
     def _client(self, monkeypatch, status=200, body="", raise_exc=None):
-        import cloud.alerts as alerts
+        import silentshorts.cloud.alerts as alerts
         calls = {}
 
         class _Resp:

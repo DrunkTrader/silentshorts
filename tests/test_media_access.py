@@ -13,8 +13,8 @@ import time
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
-import media_auth  # noqa: E402
+app_module = pytest.importorskip("silentshorts.api.app")
+from silentshorts.api import media_auth  # noqa: E402
 
 SECRET = "test-media-secret"
 OWNER = "11111111-1111-4111-8111-111111111111"
@@ -176,7 +176,7 @@ class TestHandedOutLinks:
         assert app_module._with_download_urls(result) is result
 
     def test_mcp_clip_urls_are_signed_and_absolute(self, monkeypatch):
-        import mcp_server
+        from silentshorts.api import mcp_server
         monkeypatch.setattr(mcp_server, "_media_secret", lambda: SECRET)
         monkeypatch.setenv("PUBLIC_API_URL", "https://api.example.test")
         clips = mcp_server._clip_summaries(JOB, {"clips": [{"video_url": CLIP, "start": 0, "end": 10}]})
@@ -185,7 +185,7 @@ class TestHandedOutLinks:
         assert edited["download_url"].startswith(f"https://api.example.test{CLIP}?exp=")
 
     def test_mcp_clip_urls_plain_in_self_host(self, monkeypatch):
-        import mcp_server
+        from silentshorts.api import mcp_server
         monkeypatch.setattr(mcp_server, "_media_secret", lambda: "")
         monkeypatch.setenv("PUBLIC_API_URL", "https://api.example.test")
         clips = mcp_server._clip_summaries(JOB, {"clips": [{"video_url": CLIP}]})

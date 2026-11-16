@@ -15,7 +15,7 @@ import types
 
 import pytest
 
-metering = pytest.importorskip("cloud.metering")
+metering = pytest.importorskip("silentshorts.cloud.metering")
 
 URL = "https://www.youtube.com/watch?v=e_04ZrNroTo"
 NETSCAPE = "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t0\tSID\tx\n"
@@ -46,7 +46,7 @@ def _fake_ytdl(monkeypatch, attempts, playable_anonymously=True):
 
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
-    import security_utils
+    from silentshorts.api import security_utils
     monkeypatch.setattr(security_utils, "assert_public_url", lambda u: u)
     monkeypatch.setenv("STATIC_PROXY_URLS", "http://s1")
     monkeypatch.setenv("PROXY_URL", "http://paid")

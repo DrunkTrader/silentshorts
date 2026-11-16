@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cloud import emails, lifecycle, marketing, metering
+from silentshorts.cloud import emails, lifecycle, marketing, metering
 
 
 def run(coro):
@@ -107,7 +107,7 @@ class TestCheckoutRecovery:
         assert recovery["sent"] == []
 
     def test_webhook_dispatches_and_swallows_errors(self, monkeypatch):
-        billing = pytest.importorskip("cloud.billing")  # needs the stripe SDK
+        billing = pytest.importorskip("silentshorts.cloud.billing")  # needs the stripe SDK
         seen = []
 
         async def _boom(obj):

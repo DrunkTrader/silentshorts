@@ -14,7 +14,7 @@ import pytest
 
 from fastapi import HTTPException
 
-from cloud import alerts, cancellation
+from silentshorts.cloud import alerts, cancellation
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

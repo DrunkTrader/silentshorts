@@ -1,6 +1,7 @@
 """Agent uploads (POST/PUT /api/uploads -> process with upload_id) and the
 per-job captions switch, through the MCP transport where the agent uses them."""
 import asyncio
+import importlib
 import os
 import shutil
 import subprocess
@@ -8,7 +9,7 @@ import subprocess
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 
 
 def _client():
@@ -45,9 +46,9 @@ def dirs(tmp_path, monkeypatch):
 
 
 def test_create_upload_is_an_mcp_tool():
-    names = [t["name"] for t in __import__("mcp_server").TOOLS]
+    names = [t["name"] for t in importlib.import_module("silentshorts.api.mcp_server").TOOLS]
     assert "create_upload" in names
-    pv = next(t for t in __import__("mcp_server").TOOLS if t["name"] == "process_video")
+    pv = next(t for t in importlib.import_module("silentshorts.api.mcp_server").TOOLS if t["name"] == "process_video")
     assert "upload_id" in pv["inputSchema"]["properties"]
     assert "captions" in pv["inputSchema"]["properties"]
     assert "source_url" not in pv["inputSchema"]["required"]

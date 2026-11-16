@@ -11,8 +11,8 @@ import asyncio
 # runs before any test module can import app.
 import httpx
 
-import app as app_module
-from app import app
+from silentshorts.api import app as app_module
+from silentshorts.api.app import app
 
 
 def _post(payload):
@@ -113,7 +113,7 @@ class TestCloudModeAuth:
 
     def test_resolvable_user_passes(self, monkeypatch):
         monkeypatch.setenv("BILLING_ENABLED", "1")
-        import cloud.auth as cloud_auth
+        import silentshorts.cloud.auth as cloud_auth
 
         async def fake_user(request):
             return object()

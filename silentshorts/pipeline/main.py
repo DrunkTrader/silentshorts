@@ -929,7 +929,7 @@ def _download_youtube_video(url, output_dir=".", on_audio=None, allow_paid=True,
     """
     # SSRF guard: block non-http(s) schemes and private/loopback/metadata hosts
     # before handing the URL to yt-dlp.
-    from security_utils import assert_public_url
+    from silentshorts.api.security_utils import assert_public_url
     assert_public_url(url)
     # Throwaway hosts agents fall back to (tmpfiles.org) hand out short-lived
     # signed links; refresh through the host's page so yt-dlp gets the file.

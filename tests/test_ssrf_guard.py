@@ -13,8 +13,8 @@ import types
 
 import pytest
 
-import security_utils
-from security_utils import UnsafeURLError, assert_public_url
+from silentshorts.api import security_utils
+from silentshorts.api.security_utils import UnsafeURLError, assert_public_url
 
 
 @pytest.mark.parametrize("ip", [

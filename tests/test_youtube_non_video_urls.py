@@ -56,8 +56,8 @@ def test_pages_that_are_not_one_video_are_named(url, word):
 
 class TestTheProbeRefusesBeforeAnyRequest:
     def test_no_ytdlp_call_and_no_paid_event(self, monkeypatch):
-        metering = pytest.importorskip("cloud.metering")
-        import security_utils
+        metering = pytest.importorskip("silentshorts.cloud.metering")
+        from silentshorts.api import security_utils
         monkeypatch.setattr(security_utils, "assert_public_url", lambda u: u)
         monkeypatch.setenv("STATIC_PROXY_URLS", "http://s1")
         monkeypatch.setenv("PROXY_URL", "http://paid")

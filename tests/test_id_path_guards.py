@@ -12,7 +12,7 @@ import uuid
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 
 OWNER = "11111111-1111-4111-8111-111111111111"
 ATTACKER = "22222222-2222-4222-8222-222222222222"

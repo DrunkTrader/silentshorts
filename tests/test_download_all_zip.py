@@ -8,7 +8,7 @@ import json
 import os
 import zipfile
 
-import app
+from silentshorts.api import app
 
 
 async def _no_files(job_id, request):

@@ -7,7 +7,7 @@ PROXY_BYTES counter only sees download bytes.
 """
 import pytest
 
-metering = pytest.importorskip("cloud.metering")
+metering = pytest.importorskip("silentshorts.cloud.metering")
 
 plan = metering.plan_probe_proxies
 
@@ -40,7 +40,8 @@ class TestDirectFileProbe:
     probe must fall back to ffprobe over HTTP instead of 400-ing the job."""
 
     def test_generic_extractor_falls_back_to_ffprobe(self, monkeypatch):
-        import types, sys, security_utils
+        import types, sys
+        from silentshorts.api import security_utils
         monkeypatch.setattr(security_utils, "assert_public_url", lambda u: u)
         class _YDL:
             def __init__(self, opts): pass
@@ -53,7 +54,8 @@ class TestDirectFileProbe:
         assert abs(metering.probe_url_minutes("https://cdn.example.com/v.mp4") - 559.4 / 60) < 1e-6
 
     def test_both_fail_raises(self, monkeypatch):
-        import types, sys, security_utils
+        import types, sys
+        from silentshorts.api import security_utils
         monkeypatch.setattr(security_utils, "assert_public_url", lambda u: u)
         class _YDL:
             def __init__(self, opts): pass
@@ -74,7 +76,8 @@ class TestStaticsBotCheckedVerdict:
     statics (main.plan_download_attempts skip_statics)."""
 
     def _fake_ydl(self, monkeypatch, paid):
-        import types, sys, security_utils
+        import types, sys
+        from silentshorts.api import security_utils
         monkeypatch.setattr(security_utils, "assert_public_url", lambda u: u)
         class _YDL:
             def __init__(self, opts): self.proxy = opts.get("proxy")
@@ -105,7 +108,8 @@ class TestStaticsBotCheckedVerdict:
         monkeypatch.setenv("PROXY_URL", "http://paid")
         monkeypatch.delenv("DIRECT_FIRST", raising=False)
         monkeypatch.delenv("YOUTUBE_COOKIES", raising=False)
-        import types, sys, security_utils
+        import types, sys
+        from silentshorts.api import security_utils
         monkeypatch.setattr(security_utils, "assert_public_url", lambda u: u)
         class _YDL:
             def __init__(self, opts): self.proxy = opts.get("proxy")

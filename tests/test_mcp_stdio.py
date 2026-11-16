@@ -1,4 +1,4 @@
-"""Stdio transport (mcp_stdio.py), exercised as the subprocess a host launches.
+"""Stdio transport (silentshorts/api/mcp_stdio.py), exercised as the subprocess a host launches.
 
 It has to be a real subprocess: the thing most likely to break this transport
 is the pipeline's own chatter (the app prints on import and on startup), and
@@ -12,7 +12,7 @@ import sys
 
 import pytest
 
-from mcp_server import TOOLS
+from silentshorts.api.mcp_server import TOOLS
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -30,7 +30,7 @@ def responses():
     env = dict(os.environ, BILLING_ENABLED="0", PYTHONPATH=REPO)
     env.pop("PROXY_URL", None)
     proc = subprocess.run(
-        [sys.executable, "-u", os.path.join(REPO, "mcp_stdio.py")],
+        [sys.executable, "-u", "-m", "silentshorts.api.mcp_stdio"],
         input="".join(json.dumps(m) + "\n" for m in MESSAGES),
         capture_output=True, text=True, cwd=REPO, env=env, timeout=300,
     )

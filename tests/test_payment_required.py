@@ -4,7 +4,7 @@ MCP clients and SDKs often surface only ``message``, so the link travels both
 as ``upgrade_url`` and inside the message text."""
 from types import SimpleNamespace
 
-import app
+from silentshorts.api import app
 
 
 def _cfg(monkeypatch):

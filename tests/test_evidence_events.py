@@ -11,8 +11,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from cloud import evidence
-from cloud.models import EvidenceEvent
+from silentshorts.cloud import evidence
+from silentshorts.cloud.models import EvidenceEvent
 
 IP = "203.0.113.7"   # TEST-NET-3, documentation range
 
@@ -114,7 +114,7 @@ class TestRecordEvent:
 class TestCheckout:
     @pytest.fixture(autouse=True)
     def _billing(self, monkeypatch):
-        self.billing = billing = pytest.importorskip("cloud.billing")  # needs the stripe SDK
+        self.billing = billing = pytest.importorskip("silentshorts.cloud.billing")  # needs the stripe SDK
         entry = {"price_id": "price_s", "kind": "subscription", "plan": "starter",
                  "interval": "month", "minutes": 100}
 
@@ -170,7 +170,7 @@ class TestCheckout:
 
 class TestMagicLinkLogin:
     def test_records_a_login_event(self, monkeypatch):
-        from cloud import auth
+        from silentshorts.cloud import auth
 
         token_row = SimpleNamespace(used_at=None, email="a@example.com",
                                     expires_at=datetime.now(timezone.utc) + timedelta(minutes=5))
@@ -208,7 +208,7 @@ class TestMagicLinkLogin:
 # --------------------------------------------------------------------------- #
 class TestErasureAndRetention:
     def test_is_erased_with_the_account(self, monkeypatch):
-        from cloud import account
+        from silentshorts.cloud import account
         assert EvidenceEvent in account.USER_OWNED_TABLES
 
         stmts = []
@@ -230,5 +230,5 @@ class TestErasureAndRetention:
 
     def test_the_sweeper_runs_the_purge(self):
         import inspect
-        from cloud import videos
+        from silentshorts.cloud import videos
         assert "purge_stale_events" in inspect.getsource(videos._sweeper_loop)

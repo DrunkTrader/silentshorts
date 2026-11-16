@@ -13,7 +13,7 @@ import io
 
 import pytest
 
-app = pytest.importorskip("app")
+app = pytest.importorskip("silentshorts.api.app")
 
 
 def _feed(job_id, *lines):

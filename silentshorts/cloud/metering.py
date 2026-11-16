@@ -179,7 +179,7 @@ def probe_url_minutes(url: str, allow_paid: bool = True) -> float:
     Raises ValueError if the duration is unknown (e.g. live streams).
     """
     # SSRF guard: reject non-http(s) / private / metadata hosts before probing.
-    from security_utils import assert_public_url
+    from silentshorts.api.security_utils import assert_public_url
     assert_public_url(url)
     # Throwaway hosts (tmpfiles.org) sign links with a short-lived stamp; take
     # the live one so the probe sees the file and not an HTML page.

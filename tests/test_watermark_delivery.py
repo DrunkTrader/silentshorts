@@ -96,7 +96,7 @@ class TestWalkBacks:
     """The mark is the outermost layer: every editor derivation strips it first."""
 
     def test_strip_captions_walks_through_the_mark(self, tmp_path):
-        app = pytest.importorskip("app")
+        app = pytest.importorskip("silentshorts.api.app")
         d = str(tmp_path)
         for name in ("t_clip_1.mp4", "hooked_2_t_clip_1.mp4",
                      "subtitled_3_hooked_2_t_clip_1.mp4",
@@ -109,12 +109,12 @@ class TestWalkBacks:
         assert app._strip_burned_hook(d, "wm_hooked_2_t_clip_1.mp4") == "t_clip_1.mp4"
 
     def test_strip_keeps_the_mark_when_the_twin_is_gone(self, tmp_path):
-        app = pytest.importorskip("app")
+        app = pytest.importorskip("silentshorts.api.app")
         (tmp_path / "wm_t_clip_1.mp4").write_bytes(b"x")
         assert app._strip_burned_captions(str(tmp_path), "wm_t_clip_1.mp4") == "wm_t_clip_1.mp4"
 
     def test_canonical_clip_file_prefers_the_marked_copy(self, tmp_path):
-        app = pytest.importorskip("app")
+        app = pytest.importorskip("silentshorts.api.app")
         import time
         (tmp_path / "t_clip_1.mp4").write_bytes(b"x")
         (tmp_path / "subtitled_5_t_clip_1.mp4").write_bytes(b"x")
@@ -130,7 +130,7 @@ class TestMediaGuard:
     def test_deliver_marks_only_jobs_the_pipeline_marked(self, tmp_path, monkeypatch):
         """An old-scheme free job (mark burned into the canonical, no marker)
         must not get a second mark on its next edit."""
-        app = pytest.importorskip("app")
+        app = pytest.importorskip("silentshorts.api.app")
         monkeypatch.setattr(app, "OUTPUT_DIR", str(tmp_path))
         monkeypatch.setattr(app, "BILLING_ENABLED", True)
 
@@ -158,7 +158,7 @@ class TestMediaGuard:
         assert asyncio.run(app._deliver(None, "new", "t_clip_1.mp4")) == "wm_t_clip_1.mp4"
 
     def test_marked_job_refuses_clean_clips_only(self, tmp_path, monkeypatch):
-        app = pytest.importorskip("app")
+        app = pytest.importorskip("silentshorts.api.app")
         monkeypatch.setattr(app, "OUTPUT_DIR", str(tmp_path))
         (tmp_path / "job1").mkdir()
         watermarked.mark_job(str(tmp_path / "job1"))
@@ -172,7 +172,7 @@ class TestMediaGuard:
         assert not app._media_guard("job1/.marked")
 
     def test_unmarked_job_serves_everything_deliverable(self, tmp_path, monkeypatch):
-        app = pytest.importorskip("app")
+        app = pytest.importorskip("silentshorts.api.app")
         monkeypatch.setattr(app, "OUTPUT_DIR", str(tmp_path))
         (tmp_path / "job2").mkdir()
         assert app._media_guard("job2/t_clip_1.mp4")
@@ -181,7 +181,7 @@ class TestMediaGuard:
 
 class TestLocalUnmark:
     def test_repoints_memory_metadata_and_drops_the_copy(self, tmp_path, monkeypatch):
-        app = pytest.importorskip("app")
+        app = pytest.importorskip("silentshorts.api.app")
         monkeypatch.setattr(app, "OUTPUT_DIR", str(tmp_path))
         job_dir = tmp_path / "j1"
         job_dir.mkdir()
@@ -208,12 +208,12 @@ class TestLocalUnmark:
 
 class TestArchiveTwins:
     def test_twins_of_a_marked_captioned_hook(self):
-        videos = pytest.importorskip("cloud.videos")
+        videos = pytest.importorskip("silentshorts.cloud.videos")
         assert videos._twins_to_archive("wm_subtitled_3_hooked_2_t_clip_1.mp4", "t", 0) == [
             "subtitled_3_hooked_2_t_clip_1.mp4", "hooked_2_t_clip_1.mp4"]
 
     def test_the_canonical_is_the_callers_job(self):
-        videos = pytest.importorskip("cloud.videos")
+        videos = pytest.importorskip("silentshorts.cloud.videos")
         # wm_ copy of the canonical itself: the twin IS the canonical, which
         # archive_job uploads on its own branch.
         assert videos._twins_to_archive("wm_t_clip_1.mp4", "t", 0) == []
@@ -223,7 +223,7 @@ class TestArchiveTwins:
         assert videos._twins_to_archive("t_clip_1.mp4", "t", 0) == []
 
     def test_superseded_never_touches_master_or_original(self):
-        videos = pytest.importorskip("cloud.videos")
+        videos = pytest.importorskip("silentshorts.cloud.videos")
         # An edit on a free job: the previous marked file and its clean twin go.
         assert videos._superseded_names(
             "wm_subtitled_1_t_clip_1.mp4", "wm_subtitled_0_t_clip_1.mp4",
@@ -242,7 +242,7 @@ class TestArchiveTwins:
 
 class TestUnmarkedState:
     def test_replaces_marked_names_and_reports_changes(self):
-        videos = pytest.importorskip("cloud.videos")
+        videos = pytest.importorskip("silentshorts.cloud.videos")
         state = {"v": 1, "rights_attestation": {"acknowledged": True}, "clips": [
             {"index": 0, "original_file": "wm_subtitled_1_t_clip_1.mp4",
              "server_file": "wm_subtitled_9_t_clip_1.mp4", "active_layers": None},
@@ -258,13 +258,13 @@ class TestUnmarkedState:
         assert state["clips"][0]["server_file"] == "wm_subtitled_9_t_clip_1.mp4"
 
     def test_nothing_marked_nothing_changes(self):
-        videos = pytest.importorskip("cloud.videos")
+        videos = pytest.importorskip("silentshorts.cloud.videos")
         assert videos.unmarked_clip_state(None) == ({"v": 1, "clips": []}, [])
 
 
 class TestBecameLive:
     def test_only_the_free_to_paid_transition(self):
-        billing = pytest.importorskip("cloud.billing")
+        billing = pytest.importorskip("silentshorts.cloud.billing")
         assert billing.became_live(None, "active")
         assert billing.became_live(None, "trialing")
         assert billing.became_live("canceled", "active")

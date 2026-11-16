@@ -9,7 +9,7 @@ import secrets
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from cloud import mcp_oauth
+from silentshorts.cloud import mcp_oauth
 
 
 class TestHelpers:
@@ -188,7 +188,7 @@ class TestRefreshAndRevoke:
         assert m["registration_endpoint"].endswith("/oauth/register")
 
     def test_refresh_token_is_never_a_bearer_key(self):
-        from cloud import api_keys
+        from silentshorts.cloud import api_keys
         assert not api_keys.looks_like_key(mcp_oauth.new_refresh_token())
 
     def test_unknown_refresh_token_is_invalid_grant(self, monkeypatch):
@@ -216,7 +216,7 @@ class TestRefreshAndRevoke:
 
     def test_refresh_swaps_the_secret_and_keeps_the_refresh_token(self, monkeypatch):
         from types import SimpleNamespace
-        from cloud import api_keys
+        from silentshorts.cloud import api_keys
         rt = SimpleNamespace(client_id="c1", api_key_id="k1", last_used_at=None)
         key = self._key()
         c, sess = self._client(monkeypatch, [rt, key])

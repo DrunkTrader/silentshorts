@@ -9,7 +9,7 @@ from urllib.parse import parse_qs
 import httpx
 import pytest
 
-import telegram_bot as tb
+from silentshorts.integrations import telegram_bot as tb
 
 TOKEN = "11:fake_token_for_tests"
 CHAT = 42

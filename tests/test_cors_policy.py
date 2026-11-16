@@ -9,7 +9,7 @@ import asyncio
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 
 
 def test_self_host_default_is_the_local_dashboard_not_a_wildcard():

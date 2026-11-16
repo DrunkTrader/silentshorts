@@ -842,7 +842,7 @@ def shape_result(mode: str, data: dict) -> dict:
 
 def _gemini_key():
     try:
-        from cloud import managed_keys
+        from silentshorts.cloud import managed_keys
         key = managed_keys.gemini_key()
         if key:
             return key

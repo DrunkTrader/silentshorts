@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from cloud import scopes
+from silentshorts.cloud import scopes
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -41,7 +41,7 @@ class TestAllows:
     def test_every_path_the_mcp_tools_call_is_allowed(self):
         # Read the tool implementations rather than a hand-kept list, so a new
         # tool calling a new endpoint fails here instead of in production.
-        src = (ROOT / "mcp_server.py").read_text()
+        src = (ROOT / "silentshorts" / "api" / "mcp_server.py").read_text()
         calls = re.findall(r'client\.(get|post|put|delete)\(f?"([^"]+)"', src)
         calls += [(m.lower(), p) for m, p in
                   re.findall(r'_job_call\(client, "(GET|POST|PUT|DELETE)", f?"([^"]+)"', src)]
@@ -77,7 +77,7 @@ class TestAuthEnforcement:
     @pytest.fixture()
     def auth(self, monkeypatch):
         pytest.importorskip("jwt")
-        from cloud import auth as cloud_auth, api_keys
+        from silentshorts.cloud import auth as cloud_auth, api_keys
 
         async def principal(raw):
             return ("44444444-4444-4444-8444-444444444444", "silentshorts")

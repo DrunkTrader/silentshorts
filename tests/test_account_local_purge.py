@@ -10,7 +10,7 @@ import os
 
 import pytest
 
-import app
+from silentshorts.api import app
 
 MINE = "aaaa-1111"
 THEIRS = "bbbb-2222"

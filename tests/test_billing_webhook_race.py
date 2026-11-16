@@ -15,7 +15,7 @@ import asyncio
 
 import pytest
 
-billing = pytest.importorskip("cloud.billing")  # needs the stripe SDK
+billing = pytest.importorskip("silentshorts.cloud.billing")  # needs the stripe SDK
 
 from sqlalchemy.dialects import postgresql  # noqa: E402
 

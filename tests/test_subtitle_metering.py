@@ -6,7 +6,7 @@ metadata.json. Charging for it (2 min, 10% of the free monthly quota per clip)
 priced captions out of the product: only 9% of delivered clips had them in the
 25-jul-2026 prod audit. Only the dubbed path, which re-runs Whisper, still pays.
 """
-from cloud.config import SUBTITLE_MINUTES, subtitle_minutes_for
+from silentshorts.cloud.config import SUBTITLE_MINUTES, subtitle_minutes_for
 
 
 class TestSubtitleMetering:

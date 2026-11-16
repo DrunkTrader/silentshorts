@@ -1,4 +1,4 @@
-from log_view import friendly_log_line, friendly_logs
+from silentshorts.api.log_view import friendly_log_line, friendly_logs
 
 # Raw lines captured from a real production job.
 RAW_JOB = [
@@ -81,7 +81,7 @@ def test_progress_glued_to_a_download_bar_is_still_seen():
 
 
 def test_each_line_keeps_the_time_it_first_appeared():
-    from log_view import friendly_logs_timed
+    from silentshorts.api.log_view import friendly_logs_timed
     logs = ["🎙️  Transcribing video...", "🎙️ Transcribing… 50% (3s)",
             "🔥 Found 2 clips!", "🎬 Processing Clip 1: 0s - 30s"]
     times = [100.0, 105.0, 110.0, 111.0]

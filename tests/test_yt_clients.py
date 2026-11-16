@@ -46,7 +46,7 @@ def test_lists_are_copies():
 
 
 def test_probe_uses_the_same_lists(monkeypatch):
-    metering = pytest.importorskip("cloud.metering")
+    metering = pytest.importorskip("silentshorts.cloud.metering")
     monkeypatch.setenv("BGUTIL_SCRIPT_PATH", "/opt/gen.js")
     monkeypatch.delenv("BGUTIL_BASE_URL", raising=False)
     monkeypatch.setenv("STATIC_PROXY_URLS", "")

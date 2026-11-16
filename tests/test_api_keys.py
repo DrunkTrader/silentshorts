@@ -5,7 +5,7 @@ format and hashing rules are load-bearing: a drifting prefix would break
 ``looks_like_key`` routing in cloud/auth.py, and a non-deterministic hash would
 lock every issued key out of the resolver.
 """
-from cloud.api_keys import KEY_PREFIX, generate_key, hash_key, looks_like_key
+from silentshorts.cloud.api_keys import KEY_PREFIX, generate_key, hash_key, looks_like_key
 
 
 class TestKeyGeneration:

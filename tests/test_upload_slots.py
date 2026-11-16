@@ -5,7 +5,7 @@ import os
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 
 
 def _run(coro):

@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cloud import account, config, email_policy, metering
+from silentshorts.cloud import account, config, email_policy, metering
 
 
 def _user(**kw):
@@ -99,7 +99,7 @@ class TestMagicLinkSignup:
     """verify_magic_link stamps the new row; an existing row is untouched."""
 
     def _run(self, monkeypatch, existing_user, deleted_before):
-        from cloud import auth
+        from silentshorts.cloud import auth
 
         token_row = SimpleNamespace(used_at=None, email="again@gmail.com",
                                     expires_at=datetime.now(timezone.utc) + timedelta(minutes=5))

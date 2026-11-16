@@ -161,7 +161,7 @@ def scrape_website(url: str) -> dict:
 
 def _scrape_website(url: str) -> dict:
     from bs4 import BeautifulSoup
-    from security_utils import assert_public_url
+    from silentshorts.api.security_utils import assert_public_url
 
     # SSRF guard: reject non-http(s) / private / metadata hosts, and re-validate
     # every redirect hop so a public URL can't 30x-bounce us to an internal host.

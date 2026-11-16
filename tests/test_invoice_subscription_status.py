@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-billing = pytest.importorskip("cloud.billing")  # needs the stripe SDK
+billing = pytest.importorskip("silentshorts.cloud.billing")  # needs the stripe SDK
 
 NOW = datetime(2026, 10, 5, tzinfo=timezone.utc)
 

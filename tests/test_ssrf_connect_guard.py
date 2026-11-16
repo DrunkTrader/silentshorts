@@ -62,7 +62,7 @@ def test_public_addresses_pass():
 
 
 def test_external_downloader_urls_are_checked():
-    from security_utils import UnsafeURLError
+    from silentshorts.api.security_utils import UnsafeURLError
     with pytest.raises(UnsafeURLError):
         ssrf_guard.assert_public_urls(
             {"formats": [{"url": "http://169.254.169.254/latest/meta-data"}]})

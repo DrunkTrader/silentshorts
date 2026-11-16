@@ -10,7 +10,7 @@ import pytest
 
 from silentshorts.pipeline import source_ranges
 
-app = pytest.importorskip("app")
+app = pytest.importorskip("silentshorts.api.app")
 from silentshorts.render import recut  # noqa: E402
 
 JOB = "5a1f0c3e-0000-4000-8000-000000000005"

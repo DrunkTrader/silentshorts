@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from social_metrics import summarise
+from silentshorts.integrations.social_metrics import summarise
 
 SINCE = datetime(2026, 9, 7, tzinfo=timezone.utc)
 
@@ -49,7 +49,7 @@ def test_nothing_published_reads_as_empty():
 
 
 def test_refresh_due_when_stale_or_missing():
-    from social_metrics import refresh_due
+    from silentshorts.integrations.social_metrics import refresh_due
     now = datetime(2026, 10, 7, 12, tzinfo=timezone.utc)
     assert refresh_due(None, now)
     assert refresh_due("2026-09-30T13:17:31", now)
@@ -57,7 +57,7 @@ def test_refresh_due_when_stale_or_missing():
 
 
 def test_request_ids_newest_first_successful_in_window_and_capped():
-    from social_metrics import request_ids_to_refresh
+    from silentshorts.integrations.social_metrics import request_ids_to_refresh
     rows = [
         {"request_id": "old", "success": True, "upload_timestamp": "2026-08-21T19:40:02Z"},
         {"request_id": "a", "success": True, "upload_timestamp": "2026-09-20T10:00:00Z"},

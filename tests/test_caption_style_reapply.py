@@ -11,7 +11,7 @@ import os
 import pytest
 from main_harness import stub_module
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 
 
 STYLE = {"style": "karaoke", "position": "bottom", "font_size": 20,

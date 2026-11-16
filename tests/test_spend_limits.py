@@ -23,11 +23,11 @@ import httpx
 import pytest
 from fastapi import HTTPException
 
-import cloud
-import cloud.social_profiles  # noqa: F401  (submodule app.py reaches as cloud.social_profiles)
-from cloud import config
+from silentshorts import cloud
+import silentshorts.cloud.social_profiles  # noqa: F401  (submodule app.py reaches as cloud.social_profiles)
+from silentshorts.cloud import config
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 
 
 def _call(method, path, **kw):
@@ -459,7 +459,7 @@ def test_open_upload_slots_per_user_are_capped(cloud_user, dirs, monkeypatch):
 def test_oauth_registration_is_rate_limited_per_ip(monkeypatch):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
-    from cloud import mcp_oauth
+    from silentshorts.cloud import mcp_oauth
     monkeypatch.setattr(mcp_oauth, "_register_times", {})
     monkeypatch.setattr(config, "OAUTH_REGISTRATIONS_PER_HOUR", 2)
     app = FastAPI()

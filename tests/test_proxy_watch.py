@@ -9,7 +9,7 @@ import asyncio
 
 import pytest
 
-from cloud import alerts
+from silentshorts.cloud import alerts
 
 
 def _run(coro):

@@ -10,7 +10,7 @@ import httpx
 import pytest
 from fastapi import HTTPException
 
-from cloud import social_profiles
+from silentshorts.cloud import social_profiles
 
 
 def _run_with_reply(monkeypatch, status, body):

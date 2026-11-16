@@ -34,7 +34,7 @@ from silentshorts.layouts import slot_library
 from silentshorts.layouts import slot_split
 from silentshorts.layouts import layout_ranges
 from silentshorts.render import watermarked
-import media_auth
+from silentshorts.api import media_auth
 from silentshorts.pipeline.jsonfile import write_json_atomic
 from silentshorts.paths import PROJECT_ROOT
 
@@ -153,9 +153,9 @@ SOURCE_RETENTION_SECONDS = int(
 DEBUG_LOGS = os.environ.get("DEBUG_LOGS", "").lower() in ("1", "true", "yes")
 
 if BILLING_ENABLED:
-    import cloud
-    from cloud import managed_keys, metering as _metering, config as _cloud_config, alerts as _alerts
-    from cloud.auth import get_current_user_optional
+    from silentshorts import cloud
+    from silentshorts.cloud import managed_keys, metering as _metering, config as _cloud_config, alerts as _alerts
+    from silentshorts.cloud.auth import get_current_user_optional
 else:
     cloud = None
     managed_keys = None
@@ -299,7 +299,7 @@ def _maybe_send_quota_email(user):
     if last is not None and now - last < _QUOTA_EMAIL_COOLDOWN:
         return
     _last_quota_email[str(user.id)] = now
-    from cloud.emails import send_out_of_minutes_email
+    from silentshorts.cloud.emails import send_out_of_minutes_email
     upgrade_url = f"{_cloud_config.settings.frontend_url}/#/pricing?src=email_quota"
     asyncio.create_task(send_out_of_minutes_email(user.email, upgrade_url, user.id))
 
@@ -375,7 +375,7 @@ def partial_offer(minutes_required: float, minutes_remaining: float) -> int:
     (the reservation is in whole minutes), and only when it is both worth
     clipping (``PARTIAL_MIN_MINUTES``) and actually shorter than the source.
     """
-    from cloud import config as _cfg  # plain constants; importable with billing off
+    from silentshorts.cloud import config as _cfg  # plain constants; importable with billing off
     offer = int(math.floor(max(0.0, float(minutes_remaining or 0))))
     if offer < _cfg.PARTIAL_MIN_MINUTES or offer >= minutes_required:
         return 0
@@ -398,7 +398,7 @@ def plan_partial_minutes(minutes_required: int, minutes_remaining: float, max_mi
         asked = float(max_minutes)
     except (TypeError, ValueError):
         return minutes_required, None
-    from cloud import config as _cfg
+    from silentshorts.cloud import config as _cfg
     cap = int(math.floor(min(asked, max(0.0, float(minutes_remaining or 0)))))
     if minutes_required <= cap or cap < _cfg.PARTIAL_MIN_MINUTES:
         return minutes_required, None
@@ -419,7 +419,7 @@ def free_overflow(plan, minutes_required, minutes_remaining, max_minutes, proces
     Anything else (a paid plan, a source that fits, a client that already named
     its own cut) passes through untouched.
     """
-    from cloud import config as _cfg
+    from silentshorts.cloud import config as _cfg
     remaining = max(0.0, float(minutes_remaining or 0))
     if plan != "free" or max_minutes is not None or minutes_required <= remaining:
         return None, max_minutes
@@ -674,7 +674,7 @@ async def _reserve_after_job_limit(request, user, url, input_path, job_id, max_m
         # A probe that had to reach the paid proxy leaves an event behind;
         # record it (DB row + Telegram) whether or not the probe succeeded.
         try:
-            from cloud import proxy_ledger as _pl
+            from silentshorts.cloud import proxy_ledger as _pl
             await _pl.drain_probe_events()
         except Exception:
             pass
@@ -1750,7 +1750,7 @@ def _resume_interrupted_jobs() -> set:
         # (cloud) jobs get the server key; self-host falls back to its env key.
         env = child_env()
         try:
-            from cloud import proxy_ledger as _pl
+            from silentshorts.cloud import proxy_ledger as _pl
             if BILLING_ENABLED and _pl.budget_exceeded_sync():
                 env.pop("PROXY_URL", None)  # daily paid-proxy budget hit
         except Exception:
@@ -2212,7 +2212,7 @@ async def _track_proxy_usage(job_id):
     # (cloud mode only: self-host has no DB and pays nobody per GB).
     if BILLING_ENABLED and job.get('proxy_route'):
         try:
-            from cloud import proxy_ledger as _pl
+            from silentshorts.cloud import proxy_ledger as _pl
             await _pl.record_download(job_id, job.get('proxy_route'), _job_source_url(job))
         except Exception as e:
             print(f"⚠️ proxy ledger failed for {job_id}: {e}")
@@ -2440,9 +2440,9 @@ async def _notify_clips_ready(job_id):
         return
     job['email_sent'] = True
     try:
-        from cloud.database import session as cloud_session
-        from cloud.models import User
-        from cloud.emails import send_clips_ready_email
+        from silentshorts.cloud.database import session as cloud_session
+        from silentshorts.cloud.models import User
+        from silentshorts.cloud.emails import send_clips_ready_email
         async with cloud_session() as s:
             user = await s.get(User, job['user_id'])
         if not user or not user.email:
@@ -2471,9 +2471,9 @@ async def _notify_clip_activity(job_id):
     if not clips:
         return
     try:
-        from cloud.database import session as cloud_session
-        from cloud.models import User
-        from cloud import metering
+        from silentshorts.cloud.database import session as cloud_session
+        from silentshorts.cloud.models import User
+        from silentshorts.cloud import metering
         async with cloud_session() as s:
             user = await s.get(User, job['user_id'])
             if not user:
@@ -2555,9 +2555,9 @@ async def _track_job_outcome(job, ok, err):
     often after the tab is closed, and ad-blockers eat a share of the rest.
     """
     try:
-        from cloud import analytics as _an
+        from silentshorts.cloud import analytics as _an
         from sqlalchemy import text as _sa_text
-        from cloud import database as _db
+        from silentshorts.cloud import database as _db
         user_id = job.get('user_id')
         job_index = None
         try:
@@ -2615,9 +2615,9 @@ async def _webhook_clip_entries(job_id, job):
     if BILLING_ENABLED and job.get('user_id'):
         try:
             from sqlalchemy import select as _select
-            from cloud.database import session as cloud_session
-            from cloud.models import UserVideo
-            from cloud import storage as _storage
+            from silentshorts.cloud.database import session as cloud_session
+            from silentshorts.cloud.models import UserVideo
+            from silentshorts.cloud import storage as _storage
             async with cloud_session() as s:
                 vids = list((await s.execute(
                     _select(UserVideo).where(UserVideo.job_id == job_id)
@@ -2635,7 +2635,7 @@ async def _deliver_webhook(url, body: bytes, secret):
     headers = {"Content-Type": "application/json", "User-Agent": "SilentShorts-Webhook/1.0"}
     if secret:
         headers["X-SilentShorts-Signature"] = _sign_webhook(body, secret)
-    from security_utils import assert_public_url, UnsafeURLError
+    from silentshorts.api.security_utils import assert_public_url, UnsafeURLError
     loop = asyncio.get_event_loop()
     for attempt, delay in enumerate(WEBHOOK_RETRY_DELAYS, 1):
         if delay:
@@ -2843,7 +2843,7 @@ async def lifespan(app: FastAPI):
     bot_task = None
     if not BILLING_ENABLED and os.environ.get("TELEGRAM_INTAKE_TOKEN"):
         # Self-host intake bot: polls Telegram, talks to this API over loopback.
-        import telegram_bot
+        from silentshorts.integrations import telegram_bot
         bot_task = asyncio.create_task(
             telegram_bot.run_from_env(is_active=lambda: not _draining))
     yield
@@ -2859,12 +2859,12 @@ if BILLING_ENABLED:
 
 # MCP server (/mcp): the pipeline as agent-callable tools. Works in both modes —
 # cloud requires an osk_ API key, self-host keeps BYOK (see mcp_server.py).
-import mcp_server as _mcp_server
+from silentshorts.api import mcp_server as _mcp_server
 app.include_router(_mcp_server.router)
 
 # Free public tools behind the /tools SEO pages: YouTube transcript (existing
 # captions only, never the GPU) and the title/description/tag generator.
-import free_tools as _free_tools
+from silentshorts.api import free_tools as _free_tools
 app.include_router(_free_tools.router)
 
 # Browser origins that may call the API directly. The dashboard normally does
@@ -3034,8 +3034,8 @@ async def _media_project(job_id: str):
     if BILLING_ENABLED and _JOB_ID_RE.match(job_id or ""):
         try:
             from sqlalchemy import select
-            from cloud.models import Project
-            from cloud import database as cloud_db
+            from silentshorts.cloud.models import Project
+            from silentshorts.cloud import database as cloud_db
             async with cloud_db.session() as s:
                 row = (await s.execute(
                     select(Project.user_id, Project.created_at).where(Project.job_id == job_id)
@@ -3152,8 +3152,8 @@ async def issue_media_token(request: Request):
 # tries to bring the job back from R2 (see restoring_static.py): the players
 # of a reopened project used to 404 while the transcript requests were still
 # restoring it. Late-bound lambda: the restorer is defined further down.
-from restoring_static import RestoringStaticFiles
-import media_auth
+from silentshorts.api.restoring_static import RestoringStaticFiles
+from silentshorts.api import media_auth
 app.mount("/videos", RestoringStaticFiles(
     directory=OUTPUT_DIR,
     guard=_media_guard,
@@ -3238,7 +3238,7 @@ def _visible_logs_timed(logs):
         times = None
     if not BILLING_ENABLED or DEBUG_LOGS:
         return list(logs), list(times) if times is not None else None
-    from log_view import friendly_logs_timed
+    from silentshorts.api.log_view import friendly_logs_timed
     pairs = friendly_logs_timed(logs, times)
     return [p[0] for p in pairs], ([p[1] for p in pairs] if times is not None else None)
 
@@ -3257,7 +3257,7 @@ def _visible_logs(logs):
     """
     if not BILLING_ENABLED or DEBUG_LOGS:
         return logs
-    from log_view import friendly_logs
+    from silentshorts.api.log_view import friendly_logs
     return friendly_logs(logs)
 
 
@@ -3296,7 +3296,7 @@ def enqueue_output(out, job_id):
                     # Which download attempt won and why the free ones failed;
                     # persisted at job end (cloud/proxy_ledger). Not shown to clients.
                     try:
-                        from cloud import proxy_ledger as _pl
+                        from silentshorts.cloud import proxy_ledger as _pl
                         route = _pl.parse_route_line(decoded_line)
                         if route is not None and job_id in jobs:
                             jobs[job_id]['proxy_route'] = _pl.merge_routes(
@@ -3363,7 +3363,7 @@ async def _paid_proxy_budget_exceeded() -> bool:
     if not BILLING_ENABLED:
         return False
     try:
-        from cloud import proxy_ledger as _pl
+        from silentshorts.cloud import proxy_ledger as _pl
         return bool(await _pl.budget_exceeded())
     except Exception:
         return False
@@ -3742,7 +3742,7 @@ async def _validate_source_url(url: str):
     search / playlist / channel page (yt_clients). The download and the
     metering probe check the same things again; this is the one in front of
     the quality probe, which used to have none."""
-    from security_utils import assert_public_url, UnsafeURLError
+    from silentshorts.api.security_utils import assert_public_url, UnsafeURLError
     from silentshorts.pipeline.yt_clients import youtube_non_video_reason
     try:
         await asyncio.get_event_loop().run_in_executor(None, assert_public_url, url)
@@ -4172,7 +4172,7 @@ async def process_endpoint(
     # Completion callback: reject unsafe targets NOW (clear 400) — delivery
     # re-validates anyway, but failing at submit is the debuggable behavior.
     if webhook_url:
-        from security_utils import assert_public_url, UnsafeURLError
+        from silentshorts.api.security_utils import assert_public_url, UnsafeURLError
         try:
             await asyncio.get_event_loop().run_in_executor(
                 None, assert_public_url, webhook_url)
@@ -4820,9 +4820,9 @@ async def restore_project(job_id: str, request: Request):
     if not BILLING_ENABLED:
         raise HTTPException(status_code=404, detail="Not found")
     from sqlalchemy import select
-    from cloud.auth import get_current_user_required
-    from cloud.models import Project
-    from cloud import database as cloud_db, storage as cloud_storage
+    from silentshorts.cloud.auth import get_current_user_required
+    from silentshorts.cloud.models import Project
+    from silentshorts.cloud import database as cloud_db, storage as cloud_storage
 
     user = await get_current_user_required(request)
     async with cloud_db.session() as s:
@@ -4850,7 +4850,7 @@ async def _restore_job_files(job_id: str, proj, user_id: str) -> bool:
     that are public by job id anyway. Returns True when files were actually
     pulled, False on the idempotent fast path (everything already on disk).
     """
-    from cloud import storage as cloud_storage
+    from silentshorts.cloud import storage as cloud_storage
 
     pulled = False
     # Per-job lock: a double click must not download the project twice.
@@ -4946,8 +4946,8 @@ async def _restore_for_public_path(job_id: str) -> bool:
     if not BILLING_ENABLED or not _JOB_ID_RE.match(job_id or ""):
         return False
     from sqlalchemy import select
-    from cloud.models import Project
-    from cloud import database as cloud_db
+    from silentshorts.cloud.models import Project
+    from silentshorts.cloud import database as cloud_db
     async with cloud_db.session() as s:
         proj = (await s.execute(
             select(Project).where(Project.job_id == job_id)
@@ -5977,7 +5977,7 @@ _slot_library_lock = asyncio.Lock()
 
 
 SLOT_LIBRARY_IMPORT_DIR = os.environ.get("SLOT_LIBRARY_IMPORT_DIR") or os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "split_library")
+    PROJECT_ROOT, "split_library")
 
 
 def _slot_dirs_for(owner):
@@ -6056,7 +6056,7 @@ async def _slot_download_url(url, work_dir):
         except NotASingleVideo:
             raise
         except Exception as e:
-            from cloud.metering import static_failure_warrants_paid
+            from silentshorts.cloud.metering import static_failure_warrants_paid
             if not (os.environ.get("PROXY_URL", "").strip() and is_youtube_url(url)
                     and static_failure_warrants_paid(e)
                     and not await _paid_proxy_budget_exceeded()):
@@ -6073,7 +6073,7 @@ async def _slot_download_url(url, work_dir):
     finally:
         if BILLING_ENABLED and route:
             try:
-                from cloud import proxy_ledger as _pl
+                from silentshorts.cloud import proxy_ledger as _pl
                 await _pl.record_download(f"slot_{uuid.uuid4().hex}", route, url)
             except Exception as e:
                 print(f"⚠️ Could not record slot download route: {e}")
@@ -7131,7 +7131,7 @@ async def _platforms_needing_reconnect(profile, platforms):
     Fail-open: any error reading the accounts lets the upload go ahead.
     """
     try:
-        from cloud.autopilot import fetch_social_accounts
+        from silentshorts.cloud.autopilot import fetch_social_accounts
         accounts = await fetch_social_accounts(profile)
     except Exception:
         return []
@@ -7544,7 +7544,7 @@ async def social_total_impressions(
     native posts too: social_metrics.summarise keeps only our posts published
     in the window, latest snapshot each.
     """
-    import social_metrics
+    from silentshorts.integrations import social_metrics
 
     days = _PERIOD_DAYS.get(period or "", 30)
     window_start = (datetime.fromisoformat(start_date).replace(tzinfo=timezone.utc)
@@ -7607,8 +7607,8 @@ def _start_post_metrics_refresh(api_key, profile, since) -> bool:
 
 
 async def _refresh_post_metrics(api_key, profile, since):
-    import social_metrics
-    from cloud.social_profiles import profile_token
+    from silentshorts.integrations import social_metrics
+    from silentshorts.cloud.social_profiles import profile_token
     async with _metrics_refresh_lock:
         try:
             token = await profile_token(profile)
@@ -7693,14 +7693,14 @@ def thumbnail_transcribe_minutes(source_minutes) -> int:
     """Minutes a Thumbnail Studio transcription costs: one per
     THUMBNAIL_SOURCE_MINUTES_PER_CHARGED minutes of source, never less than the
     flat TRANSCRIBE_MINUTES a typical video always cost."""
-    from cloud import config as _cfg  # plain constants; importable with billing off
+    from silentshorts.cloud import config as _cfg  # plain constants; importable with billing off
     per = max(1, int(_cfg.THUMBNAIL_SOURCE_MINUTES_PER_CHARGED))
     minutes = max(0.0, float(source_minutes or 0))
     return max(int(_cfg.TRANSCRIBE_MINUTES), int(math.ceil(minutes / per - 1e-9)))
 
 
 def _check_thumbnail_length(minutes):
-    from cloud import config as _cfg
+    from silentshorts.cloud import config as _cfg
     cap = int(_cfg.THUMBNAIL_MAX_SOURCE_MINUTES)
     if cap > 0 and float(minutes) > cap + 0.5:
         raise HTTPException(status_code=413, detail=(
@@ -7741,7 +7741,7 @@ async def _probe_thumbnail_url(request, url, user):
                             detail="Could not determine the video duration. Try a different source.")
     finally:
         try:
-            from cloud import proxy_ledger as _pl
+            from silentshorts.cloud import proxy_ledger as _pl
             await _pl.drain_probe_events()
         except Exception:
             pass
@@ -7762,7 +7762,7 @@ async def _download_thumbnail_source(url, session_id, paid_allowed=True, cap_min
     finally:
         if BILLING_ENABLED and route:
             try:
-                from cloud import proxy_ledger as _pl
+                from silentshorts.cloud import proxy_ledger as _pl
                 await _pl.record_download(session_id, route, url)
             except Exception as e:
                 print(f"⚠️ Could not record thumbnail download route: {e}")
@@ -8039,7 +8039,7 @@ async def thumbnail_analyze(
 
 def _cloud_cfg():
     """cloud.config: plain env-backed constants, importable with billing off."""
-    from cloud import config as _cfg
+    from silentshorts.cloud import config as _cfg
     return _cfg
 
 
@@ -8500,7 +8500,7 @@ async def thumbnail_publish_status(publish_id: str, request: Request):
 # SaaSShorts: AI UGC Video Generator for SaaS Products
 # ═══════════════════════════════════════════════════════════════════════
 
-from saasshorts import (
+from silentshorts.integrations.saasshorts import (
     scrape_website,
     research_saas_online,
     analyze_saas,
@@ -9142,7 +9142,7 @@ async def saasshorts_generate(
         if req.selected_actor_url.startswith("http"):
             # Download from S3 public URL to job output dir
             import httpx
-            from security_utils import assert_public_url
+            from silentshorts.api.security_utils import assert_public_url
             actor_local = os.path.join(job_output_dir, "selected_actor.png")
 
             def _fetch_actor():

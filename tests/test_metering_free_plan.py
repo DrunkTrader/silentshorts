@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cloud import config, metering
+from silentshorts.cloud import config, metering
 
 
 def _user(google_sub="g-123", email="x@gmail.com"):

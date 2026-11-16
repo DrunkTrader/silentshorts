@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 # Register model metadata.
-from cloud.database import Base
-import cloud.models  # noqa: F401
+from silentshorts.cloud.database import Base
+import silentshorts.cloud.models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

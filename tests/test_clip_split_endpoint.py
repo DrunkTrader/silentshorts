@@ -7,7 +7,7 @@ import os
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 from silentshorts.layouts import layout_ranges  # noqa: E402
 from silentshorts.layouts import slot_library  # noqa: E402
 from silentshorts.layouts import slot_split  # noqa: E402

@@ -32,7 +32,7 @@ def test_range_mode_gate(main, args, env, billing, expected):
 
 @pytest.fixture
 def fake_ydl(main, monkeypatch, tmp_path):
-    import security_utils
+    from silentshorts.api import security_utils
     from silentshorts.pipeline import ssrf_guard
     FakeYDL.instances = []
     FakeYDL.fail_extract = staticmethod(lambda params: None)

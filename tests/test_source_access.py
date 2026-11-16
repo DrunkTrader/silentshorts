@@ -17,7 +17,7 @@ import time
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 
 JOB_ID = "5a1f0c3e-0000-4000-8000-000000000004"
 

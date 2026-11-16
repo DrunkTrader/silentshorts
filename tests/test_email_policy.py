@@ -3,7 +3,7 @@ import asyncio
 
 import pytest
 
-from cloud import email_policy as ep
+from silentshorts.cloud import email_policy as ep
 
 
 class TestDisposable:

@@ -4,7 +4,7 @@ success path is exercised against prod after deploy."""
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from cloud import auth
+from silentshorts.cloud import auth
 
 
 def _client():

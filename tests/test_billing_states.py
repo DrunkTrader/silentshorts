@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cloud import config, metering
+from silentshorts.cloud import config, metering
 
 
 def _sub(status="active", period_end=None):

@@ -8,7 +8,7 @@ import subprocess
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 from silentshorts.layouts import slot_library  # noqa: E402
 
 needs_ffmpeg = pytest.mark.skipif(not shutil.which("ffmpeg"), reason="no ffmpeg")

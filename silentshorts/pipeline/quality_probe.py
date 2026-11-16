@@ -47,7 +47,7 @@ def main() -> int:
     # result is the fail-open "unknown", so the caller carries on and the
     # real probe / download refuse the URL with their own message.
     try:
-        from security_utils import assert_public_url
+        from silentshorts.api.security_utils import assert_public_url
         from silentshorts.pipeline.yt_clients import youtube_non_video_reason
         assert_public_url(args.url)
         if youtube_non_video_reason(args.url):

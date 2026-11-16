@@ -17,7 +17,7 @@ import os
 import httpx
 import pytest
 
-app_module = pytest.importorskip("app")
+app_module = pytest.importorskip("silentshorts.api.app")
 
 
 def _client_call(method, path, **kw):
@@ -108,7 +108,7 @@ def test_youtube_search_page_is_refused_before_any_probe(dirs, monkeypatch):
         probed.append(u)
         return {}
     monkeypatch.setattr(app_module, "_probe_youtube_quality", _probe)
-    monkeypatch.setattr("security_utils.assert_public_url", lambda u: u)
+    monkeypatch.setattr("silentshorts.api.security_utils.assert_public_url", lambda u: u)
     resp = _post_process({"url": "https://www.youtube.com/results?search_query=x",
                           "acknowledged": True})
     assert resp.status_code == 400
@@ -363,7 +363,7 @@ def test_render_requests_are_bounded_and_scoped(monkeypatch):
     and loads videoUrl in a headless browser."""
     import uuid as _uuid
     from fastapi import HTTPException as _HTTPException
-    import app as _app
+    from silentshorts.api import app as _app
 
     jid = str(_uuid.uuid4())
     ok = {"jobId": jid, "clipIndex": 0, "props": {

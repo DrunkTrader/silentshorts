@@ -6,7 +6,7 @@ get published and when, and how each /api/process answer is recorded.
 """
 from datetime import datetime, timedelta, timezone
 
-from cloud import autopilot as ap
+from silentshorts.cloud import autopilot as ap
 
 NOW = datetime(2026, 9, 22, 18, 0, tzinfo=timezone.utc)
 
@@ -139,7 +139,7 @@ class TestSmallRules:
 
 
 def test_connect_return_targets_are_a_closed_list():
-    from cloud import social_profiles
+    from silentshorts.cloud import social_profiles
     assert set(social_profiles.RETURN_TARGETS) == {"account", "autopilot"}
     assert all(v.startswith("/#") for v in social_profiles.RETURN_TARGETS.values())
 
@@ -176,7 +176,7 @@ class TestTwitchSource:
         assert ap.channel_sources({"twitch": {}, "tiktok": {}}) == ["twitch"]
 
     def test_connect_page_offers_twitch_only_with_the_flag(self, monkeypatch):
-        from cloud import social_profiles
+        from silentshorts.cloud import social_profiles
         monkeypatch.delenv("AUTOPILOT_TWITCH", raising=False)
         assert "twitch" not in social_profiles.connect_platforms()
         monkeypatch.setenv("AUTOPILOT_TWITCH", "1")

@@ -22,7 +22,7 @@ class TestLoginCodeHelpers:
     @pytest.fixture(autouse=True)
     def _auth(self):
         pytest.importorskip("jwt")
-        from cloud import auth
+        from silentshorts.cloud import auth
         self.auth = auth
 
     def test_challenge_is_base64url_sha256_of_the_verifier(self):
@@ -48,8 +48,8 @@ class TestLoginCodeHelpers:
 
 class TestLoginCodeTable:
     def test_is_erased_with_the_account(self):
-        from cloud import account
-        from cloud.models import LoginCode
+        from silentshorts.cloud import account
+        from silentshorts.cloud.models import LoginCode
         assert LoginCode in account.USER_OWNED_TABLES
 
 

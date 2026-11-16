@@ -5,7 +5,7 @@ or the webhook, so mailing its owner on every run is noise."""
 import asyncio
 from types import SimpleNamespace
 
-import app
+from silentshorts.api import app
 
 
 def _req(headers):
