@@ -10,7 +10,7 @@ API: no inbound port, no public URL, no bot framework, and every API guard
 1. Create a bot with BotFather and copy its token.
 2. Find your chat id (message the bot, then ask the Bot API for updates, or use
    any "get my id" bot).
-3. Put these in `.env`, then start the API (`uvicorn app:app`):
+3. Put these in `.env`, then start the API (`uvicorn silentshorts.api.app:app`):
 
 ```
 TELEGRAM_INTAKE_TOKEN=<token from BotFather>

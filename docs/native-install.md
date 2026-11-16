@@ -23,7 +23,7 @@ dashboard directly on Linux (including aarch64) and on Windows.
    0.10.14`, `faster-whisper`, `ultralytics` all have aarch64 wheels) and
    `pip check` is clean.
 3. Dashboard (Node 20 or newer): `cd dashboard && npm ci`.
-4. Run: `uvicorn app:app --host 127.0.0.1 --port 8000`, then in another shell
+4. Run: `uvicorn silentshorts.api.app:app --host 127.0.0.1 --port 8000` (from the repo root), then in another shell
    `cd dashboard && VITE_PROXY_TARGET=http://localhost:8000 npm run dev`.
 
 `bin/ffmpeg` (the NVENC thread/slot cap) is only put on `PATH` inside the
@@ -45,7 +45,7 @@ Docker image; native runs use the system `ffmpeg` as is.
    $env:MAX_CONCURRENT_JOBS = "1"
    $env:WHISPER_MODEL = "small"   # "base" on 2 cores
    ```
-4. Run: `uvicorn app:app --host 127.0.0.1 --port 8000`; in a second terminal
+4. Run: `uvicorn silentshorts.api.app:app --host 127.0.0.1 --port 8000` (from the repo root); in a second terminal
    `cd dashboard; npm install; $env:VITE_PROXY_TARGET = "http://localhost:8000"; npm run dev`.
 
 Job processes are forced to UTF-8 output on Windows, and the host-wide NVENC
@@ -67,7 +67,7 @@ the same way; if no wheel exists for your interpreter, set `WHISPER_VAD=0`
 
 ## Smoke test
 
-`uvicorn app:app --port 8000`, then `GET http://127.0.0.1:8000/docs` must
+`uvicorn silentshorts.api.app:app --port 8000`, then `GET http://127.0.0.1:8000/docs` must
 return 200. A full run (a 1 to 2 minute upload) needs a Gemini key or an
 OpenAI-compatible server (`LLM_BASE_URL`); it has not been verified end to end
 in this setup.

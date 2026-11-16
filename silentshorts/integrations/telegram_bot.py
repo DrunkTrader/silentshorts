@@ -1497,7 +1497,7 @@ class IntakeBot:
 
 
 async def run_from_env(is_active: Callable[[], bool] = lambda: True, env=None):
-    """Entry point used by app.lifespan (and `python -m telegram_bot`)."""
+    """Entry point used by app.lifespan (and `python -m silentshorts.integrations.telegram_bot`)."""
     env = os.environ if env is None else env
     # httpx logs every request URL at INFO, and Bot API URLs carry the token.
     for name in ("httpx", "httpcore"):

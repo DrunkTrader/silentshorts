@@ -1,4 +1,4 @@
-# Thumbnail Studio (`thumbnail.py`, `/api/thumbnail/*`)
+# Thumbnail Studio (`silentshorts/render/thumbnail.py`, `/api/thumbnail/*`)
 
 ## Titles
 
@@ -46,7 +46,7 @@ Refinement and description calls are bounded: message/title length, the last
 `THUMBNAIL_CONVERSATION_MAX_TURNS` chat turns sent back, refinements per
 session, calls per user and hour, and a free account at zero minutes can only
 keep working on a session it already paid for (`metered`). All limits live in
-`cloud/config.py` and are env-overridable.
+`silentshorts/cloud/config.py` and are env-overridable.
 
 Transcribing in the API process (thumbnails, `/api/subtitle` on a dubbed clip)
 must end with `transcribe_backends.release_models()`, or the ASR model stays

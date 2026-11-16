@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SilentShorts is an AI-powered vertical video generator that turns long YouTube videos or local uploads into short 9:16 clips for TikTok, Instagram Reels and YouTube Shorts. Google Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite`, overridable with `GEMINI_MODEL`) picks the viral moments and writes the titles. It ships as self-host (BYOK) and as a Cloud edition (`BILLING_ENABLED`, code under `cloud/`).
+SilentShorts is an AI-powered vertical video generator that turns long YouTube videos or local uploads into short 9:16 clips for TikTok, Instagram Reels and YouTube Shorts. Google Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite`, overridable with `GEMINI_MODEL`) picks the viral moments and writes the titles. It ships as self-host (BYOK) and as a Cloud edition (`BILLING_ENABLED`, code under `silentshorts/cloud/`).
 
 ## Development Commands
 
@@ -17,7 +17,7 @@ npm run build                    # production build (CI runs this)
 npm run lint                     # ESLint, --max-warnings 0
 
 pip install -r requirements.txt
-uvicorn app:app --host 0.0.0.0 --port 8000
+uvicorn silentshorts.api.app:app --host 0.0.0.0 --port 8000   # from the repo root
 pytest tests/ -v                 # CI runs this without the heavy ML stack
 pytest tests/test_clip_floor.py -v               # one file (add -k <name> for one test)
 
@@ -26,11 +26,11 @@ pip install pytest pillow httpx pydantic sqlalchemy greenlet numpy opencv-python
   python-dotenv google-genai fastapi boto3 PyJWT email-validator python-multipart
 ```
 
-- Pipeline modules import the ML stack lazily behind feature gates, and tests exercise the gated-off paths: keep new heavy imports inside functions or CI breaks. The exception is `main.py`, which imports torch/ultralytics/mediapipe at module level (and loads YOLO on import); tests that need it go through `tests/main_harness.py`, which stubs them.
+- Pipeline modules import the ML stack lazily behind feature gates, and tests exercise the gated-off paths: keep new heavy imports inside functions or CI breaks. The exception is `silentshorts/pipeline/main.py`, which imports torch/ultralytics/mediapipe at module level (and loads YOLO on import); tests that need it go through `tests/main_harness.py`, which stubs them.
 - CI (`.github/workflows/`) runs `pytest` (Python 3.11) and `npm run build` (Node 20); it does not lint, so run `npm run lint` yourself.
-- Job ids are uuid4 strings. Any route with `{job_id}` in its path declares `dependencies=[Depends(valid_job_id)]` (`app.py`), and test fixtures use uuid-shaped ids; an id like `pending` once matched another user's reserved upload (`uploads/pending_<id>_<name>`).
+- Job ids are uuid4 strings. Any route with `{job_id}` in its path declares `dependencies=[Depends(valid_job_id)]` (`silentshorts/api/app.py`), and test fixtures use uuid-shaped ids; an id like `pending` once matched another user's reserved upload (`uploads/pending_<id>_<name>`).
 - `ruff check .` (config in `ruff.toml`) runs in CI and fails on real errors only; `npm run lint` also runs in CI now.
-- DB schema is created with `create_all` at boot (`cloud/database.py`): changes to `cloud/models.py` must be additive. `alembic/` has no migrations yet.
+- DB schema is created with `create_all` at boot (`silentshorts/cloud/database.py`): changes to `silentshorts/cloud/models.py` must be additive. `alembic/` has no migrations yet.
 - Remotion compositions exist twice, `remotion/` (server render) and `dashboard/src/remotion/` (in-browser preview/render), and have already drifted (`lib/fonts.ts`, `lib/types.ts`): change both.
 - `cli/` is the `silentshorts` PyPI CLI, published by pushing a `cli-vX.Y.Z` tag matching `cli/pyproject.toml`.
 
@@ -40,12 +40,15 @@ Ingest (yt-dlp or upload) → transcription (word timestamps) → scene detectio
 
 ## Key Files
 
-- `main.py`: core processing (transcription, scene detection, clip extraction, reframing). Runs as a child process per job.
-- `app.py`: FastAPI server, job queue, REST endpoints, deploy handover/drain.
-- `clip_selection.py`, `layout_picker.py`, `reframe_v2.py`, `split_layout.py`, `screencast_layout.py`, `camera_inset.py`: moment picking and layouts.
-- `editor.py` (Gemini FFmpeg effects), `hooks.py` (hook overlays), `subtitles.py` (SRT/ASS, burning), `translate.py` (ElevenLabs dubbing), `thumbnail.py`.
-- `mcp_server.py`, `mcp_stdio.py`: MCP over HTTP and stdio.
-- `cloud/`: auth, API keys, metering, billing, lifecycle emails, account erasure, autopilot, proxy ledger, alerts.
+The backend is the `silentshorts` package (no `.py` at the repo root; dev scripts in `scripts/`). Run everything from the repo root: `output/`, `uploads/` and `split_library/` resolve from the cwd, and repo-root files (fonts, assets, YOLO weights in `assets/models/`) from `silentshorts.paths.PROJECT_ROOT`. The rules below name modules by their short name (`layout_picker.apply()` is `silentshorts.layouts.layout_picker.apply()`).
+
+- `silentshorts/pipeline/main.py`: core processing (transcription, scene detection, clip extraction, reframing). Runs as a child process per job (`python -u -m silentshorts.pipeline.main`).
+- `silentshorts/api/app.py`: FastAPI server, job queue, REST endpoints, deploy handover/drain.
+- `silentshorts/selection/clip_selection.py`, `silentshorts/layouts/` (`layout_picker.py`, `reframe_v2.py`, `split_layout.py`, `screencast_layout.py`, `camera_inset.py`): moment picking and layouts.
+- `silentshorts/render/`: `editor.py` (Gemini FFmpeg effects), `hooks.py` (hook overlays), `subtitles.py` (SRT/ASS, burning), `translate.py` (ElevenLabs dubbing), `thumbnail.py`.
+- `silentshorts/api/mcp_server.py`, `silentshorts/api/mcp_stdio.py`: MCP over HTTP and stdio (`python -m silentshorts.api.mcp_stdio`).
+- `silentshorts/cloud/`: auth, API keys, metering, billing, lifecycle emails, account erasure, autopilot, proxy ledger, alerts.
+- `silentshorts/integrations/`: Telegram intake bot, social metrics, SaaS Shorts.
 - `dashboard/src/App.jsx`: main React component. `dashboard/vite-plugin-seo.js` + `dashboard/seo/`: build-time SEO pages, sitemap, llms.txt. `dashboard/seo/data.js`: single source of truth for pricing/pipeline/competitor facts.
 
 ## Subsystem reference (read before touching)
@@ -93,13 +96,13 @@ Ingest (yt-dlp or upload) → transcription (word timestamps) → scene detectio
 **Download proxies**
 - Route order is direct → static → paid (per-GB `PROXY_URL`). Never use the paid proxy for non-YouTube URLs, nor for failures another IP cannot fix (`static_failure_warrants_paid`).
 - The probe also carries `YOUTUBE_COOKIES`, like the download does; first attempt with cookies, second anonymous, on probe and download alike.
-- Keep the explicit `yt_clients.py` client list; never put `player_skip: webpage` back. `noplaylist` always; non-video URLs refused by an allowlist.
+- Keep the explicit `silentshorts/pipeline/yt_clients.py` client list; never put `player_skip: webpage` back. `noplaylist` always; non-video URLs refused by an allowlist.
 - `DOWNLOAD_SKIP_STATICS` only when the probe saw every static bot-checked. `PAID_PROXY_DAILY_MB` is the hard daily ceiling. Never keep `PROXY_URL` in a local `.env`.
 
 **Agent access**
 - MCP stdio: swap `sys.stdout` for stderr **before importing `app`**, and enter the app lifespan.
 - Webhook URLs go through `security_utils.assert_public_url` at submit AND at delivery.
-- API-key auth can never manage keys, consent to OAuth, touch billing or delete the account (`get_session_user_required`). OAuth tokens are ordinary `osk_` keys that carry their scope (`cloud/scopes.py`): a new MCP tool endpoint joins `_MCP_ROUTES`.
+- API-key auth can never manage keys, consent to OAuth, touch billing or delete the account (`get_session_user_required`). OAuth tokens are ordinary `osk_` keys that carry their scope (`silentshorts/cloud/scopes.py`): a new MCP tool endpoint joins `_MCP_ROUTES`.
 - Cloud `/videos` and `/thumbnails` answer only to a signature, the owner's media token or the owner's credentials (`app._authorize_media`). Any media URL handed outside the dashboard (MCP, webhook, API) goes through `_signed_media_url` / `media_auth.sign_absolute_url`; a new job-like directory writes `.owner`.
 - The Google callback redirects with a single-use code bound to the dashboard's `cc` challenge, never the session JWT (`/api/auth/exchange`).
 - yt-dlp and server-side scrapes run inside `ssrf_guard.guarded()`: redirects and DNS answers are checked at connect time, not only the submitted URL.

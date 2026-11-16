@@ -1,16 +1,16 @@
-# Download routing and paid proxy accounting (`cloud/proxy_ledger.py`)
+# Download routing and paid proxy accounting (`silentshorts/cloud/proxy_ledger.py`)
 
 ## Route order
 
 Downloads go **direct → static ISP proxies (`STATIC_PROXY_URLS`, flat rate) →
 per-GB proxy (`PROXY_URL`)**. The duration probe
-(`cloud/metering.probe_url_minutes`) follows the same order, with one extra free
+(`silentshorts/cloud/metering.probe_url_minutes`) follows the same order, with one extra free
 step before any per-GB attempt: the fallback clients through a static
 (`fallback-static`).
 
 ## yt-dlp clients
 
-**The client list is explicit and shared** (`yt_clients.py`: `default,mweb` +
+**The client list is explicit and shared** (`silentshorts/pipeline/yt_clients.py`: `default,mweb` +
 the bgutil PO token provider). With account cookies yt-dlp's own defaults are
 `tv_downgraded` + `web`, and on a share of videos both come back UNPLAYABLE /
 SABR-only, which yt-dlp reports as "Video unavailable" and looks like an IP ban.
@@ -62,7 +62,7 @@ identically.
   `run_job` checks again when a queued job starts). Thumbnail Studio downloads
   run in the API process and take `allow_paid` / `route_out` from
   `download_youtube_video` instead of the env.
-- Do not keep `PROXY_URL` in a local `.env`: every local `main.py` run would then
+- Do not keep `PROXY_URL` in a local `.env`: every local `silentshorts/pipeline/main.py` run would then
   bill the per-GB proxy.
 
 ## Range jobs: audio first, then pieces (self-host)
@@ -77,7 +77,7 @@ Audio is required, so it may take the paid route when direct and static fail.
 `RANGE_DOWNLOAD=0`, Cloud (`BILLING_ENABLED`), source caps, `--skip-analysis`,
 `--transcript` and non-YouTube URLs keep the single full download.
 
-Each call prints its own `PROXY_ROUTE=` / `PROXY_BYTES=`; `app.py` sums the
+Each call prints its own `PROXY_ROUTE=` / `PROXY_BYTES=`; `silentshorts/api/app.py` sums the
 bytes and merges the routes (`proxy_ledger.merge_routes`). The ffmpeg section
 downloader reports only each finished piece's file size, which is also the
 floor used for paid bytes (a lower bound of the wire bytes). A source with no
@@ -85,9 +85,9 @@ audio-only stream stops after one attempt and falls back to the full download.
 
 ## Ledger and alerts
 
-`main.py` prints `PROXY_ROUTE=<json>` after every download (winner, paid bytes
+`silentshorts/pipeline/main.py` prints `PROXY_ROUTE=<json>` after every download (winner, paid bytes
 across all attempts including failed paid ones, each free attempt's error);
-`app.py` persists it as a `proxy_usage` row at job end and alerts when the paid
+`silentshorts/api/app.py` persists it as a `proxy_usage` row at job end and alerts when the paid
 proxy carried bytes, folding a burst into one message per 5 min. The table, not
 the in-memory monthly counter or the rotating container log, is what answers
 "what did this day cost".
@@ -96,4 +96,4 @@ The watcher probes the static pool against a real YouTube watch page (playable
 markers), not a generic connectivity endpoint: YouTube can refuse the static IPs
 while other hosts keep answering. When `YOUTUBE_COOKIES` is set it also checks
 the ytcfg `LOGGED_IN` marker and alerts on the first probe that says the session
-is gone (`cloud/alerts.py`).
+is gone (`silentshorts/cloud/alerts.py`).

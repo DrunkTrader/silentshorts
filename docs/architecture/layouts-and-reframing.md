@@ -1,16 +1,16 @@
 # Layout selection and vertical reframing
 
-## Choosing the layout (`layout_picker.py`, `app.py:layout_env`)
+## Choosing the layout (`silentshorts/layouts/layout_picker.py`, `silentshorts/api/app.py:layout_env`)
 
 `POST /api/process` accepts `layouts`: a JSON list or comma-separated string of
 `auto`, `split`, `screencast`, `speaker_cut`, `punch_in` and `none`. Each name
-turns on its env variable for **that** job (`app.py:layout_env`); `none` turns
+turns on its env variable for **that** job (`silentshorts/api/app.py:layout_env`); `none` turns
 the picker off even when the deployment runs with `AUTO_LAYOUT=1` (plain crop
 and nothing else). Without `layouts` the deployment env decides. The dashboard
 exposes it under advanced options ("vertical layout": auto / split / screencast
 / none, `MediaInput.jsx`, remembered in `localStorage.os_layout`).
 
-`auto` enables `layout_picker.py`: **one** Gemini call per source video (not per
+`auto` enables `silentshorts/layouts/layout_picker.py`: **one** Gemini call per source video (not per
 clip) choosing between `none` / `screencast` / `split`. On a hand-labelled
 48-clip corpus it scores 92-96% across passes with 0-1 false positives on the
 clips that must not be touched.
@@ -38,7 +38,7 @@ a wide two-shot, the 12 stills are mostly close-ups, the model rightly says
 `none`, and every two-shot rendered GENERAL (two small people in a blurred
 strip). `split_layout`'s own per-scene guards (below) decide each scene.
 
-## Subtitles already burned into the source (`burned_subtitles.py`)
+## Subtitles already burned into the source (`silentshorts/render/burned_subtitles.py`)
 
 A re-uploaded TV show often carries its own subtitles in the picture; burning
 ours on top gave two text layers, theirs cut off at the sides by the 9:16 crop.
@@ -52,7 +52,7 @@ cropping from the bottom keeps every face coordinate). The recut and the
 editor's re-render pass the same band, but only when captions go back on.
 `SUBTITLE_BAND_CHECK=0` disables it; any failure renders as before.
 
-## Hook grounding for on-screen clips (`hook_grounding.py`)
+## Hook grounding for on-screen clips (`silentshorts/selection/hook_grounding.py`)
 
 The hook and title come from the detail pass, which only reads the transcript, so
 on a clip whose meaning is on screen they summarise the video's topic instead of
@@ -66,7 +66,7 @@ Gemini-only (frames): with just a local LLM it logs one line and keeps the
 transcript hook. `HOOK_GROUNDING=0` disables it. The detail prompt also carries
 the rule "about this moment, not the video".
 
-## Where the hook is drawn (`hook_placement.py`)
+## Where the hook is drawn (`silentshorts/render/hook_placement.py`)
 
 The hook used to sit at a fixed 20% of the height, which is where a TRACK
 speaker's eyes are and where the top SPLIT speaker's face is. `position="auto"`
@@ -97,7 +97,7 @@ width, so an explicit GENERAL override on a portrait clip cannot shrink it.
 - **TRACK** (single subject): MediaPipe face detection + YOLOv8 fallback with
   "Heavy Tripod" stabilization.
 - **GENERAL** (groups/landscapes): blurred-background layout preserving full width.
-- **SPLIT** (two-shot conversation, `split_layout.py`, `SPLIT_LAYOUT=1`): both
+- **SPLIT** (two-shot conversation, `silentshorts/layouts/split_layout.py`, `SPLIT_LAYOUT=1`): both
   speakers stacked in half-frames. v2 engine only; a fallback to the v1 loop
   silently renders GENERAL. It upgrades scenes the classifier already sent to
   GENERAL, never TRACK ones, and needs both faces visible **in the same frame**
@@ -106,13 +106,13 @@ width, so an explicit GENERAL override on a portrait clip cannot shrink it.
   `SPLIT_TIGHTNESS` (default 0.8) trades a little upscale for keeping the other
   speaker out of each half. Captions on a SPLIT stretch sit on the seam between
   the halves (`{\an5}` per word event in `subtitles.generate_ass`); the render
-  records stacked stretches in a `<clip>.layout.json` sidecar (`layout_ranges.py`)
+  records stacked stretches in a `<clip>.layout.json` sidecar (`silentshorts/layouts/layout_ranges.py`)
   and every metadata writer copies it into the clip's `layout_ranges`, so
   `/api/subtitle` finds it after a restyle too. The fast rerender (cut without
   reframe) carries the ranges through the new cut (`layout_ranges.remap`, in
   `recut.perform_recut`). Only the ASS path can do this; SRT burns keep one
   alignment for the whole file.
-- **SCREENCAST / WIDE** (`screencast_layout.py`, `SCREENCAST_LAYOUT=1`): for
+- **SCREENCAST / WIDE** (`silentshorts/layouts/screencast_layout.py`, `SCREENCAST_LAYOUT=1`): for
   scenes whose meaning lives outside the centre. **Until 6-oct-2026 nothing
   asked which scenes those were**: the flag was set (by `layouts=["screencast"]`
   or the picker) but `reframe_v2.render` never got any content ranges, so every
@@ -156,7 +156,7 @@ width, so an explicit GENERAL override on a portrait clip cannot shrink it.
   tutorial clip mixes shots with and without it. The old whole-video detector (time ranges + width_fraction)
   was never called in production and is gone: it uploaded the source, ~670k
   tokens for a 37-min tutorial.
-- **INSET** (`camera_inset.py`): full-width screen on top, the enlarged webcam
+- **INSET** (`silentshorts/layouts/camera_inset.py`): full-width screen on top, the enlarged webcam
   box below, for a single source with the camera composited in a corner (OBS,
   stream VODs). Chained after the `screencast` decision, **not** asked of Gemini
   (offered as a fourth option it answered `screencast` and overall accuracy
@@ -166,13 +166,13 @@ width, so an explicit GENERAL override on a portrait clip cannot shrink it.
   widths (the webcam's head-and-shoulders framing) and the box never starts
   below the head (`FACE_HEADROOM`): grown like YOLO's torso box and pinned to
   the bottom edge it cut the forehead off.
-- **ALTERNATE** (`active_speaker.py`, `SPEAKER_SIGNAL=1` + `SPEAKER_CUT=1`):
+- **ALTERNATE** (`silentshorts/layouts/active_speaker.py`, `SPEAKER_SIGNAL=1` + `SPEAKER_CUT=1`):
   hard cuts to whoever is talking, rendered through the TRACK path as a
   trajectory with jumps. `SPEAKER_SIGNAL=1` alone just gates SPLIT on both people
   actually speaking. Mouth activity **must** be normalised per speaker before
   comparing (`normalise_activity`): raw frame-difference magnitude scales with
   local contrast and lighting.
-- **Punch-in** (`punch_in.py`, `PUNCH_IN=1`): not a layout. A ~12% push on the
+- **Punch-in** (`silentshorts/render/punch_in.py`, `PUNCH_IN=1`): not a layout. A ~12% push on the
   clip's beats, riding the TRACK path by widening its per-frame crop command from
   x-only to w/h/x/y. Beats come from the audio envelope; `emphasis_times` is a
   plain list of seconds so transcript hook words can replace it.
@@ -184,7 +184,7 @@ width, so an explicit GENERAL override on a portrait clip cannot shrink it.
 
 ## Slot split (clip-level)
 
-`slot_split.py` renders a top/bottom stack where each half is the clip itself
+`silentshorts/layouts/slot_split.py` renders a top/bottom stack where each half is the clip itself
 (`source`) or an uploaded video (`upload`), 50/50, 60/40 or 40/60 (the top
 slot's share), from the dashboard's "split with clip" panel in the reframe
 editor and the Telegram bot's Split screen setting. It is separate from the

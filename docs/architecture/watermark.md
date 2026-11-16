@@ -1,4 +1,4 @@
-# Free-plan watermark: a served copy that paying removes (`watermarked.py`)
+# Free-plan watermark: a served copy that paying removes (`silentshorts/render/watermarked.py`)
 
 Every file the pipeline and the clip editor write is clean. On the free plan the
 file that is *served* is `wm_<final>`, a copy of the final file with the mark
@@ -10,7 +10,7 @@ twins live on disk and in R2 (`cloud.videos._twins_to_archive`). The mark must
 never be burned into the canonical reframe: every derivative would inherit it
 and "upgrade to remove the watermark" would be false for clips already made.
 
-- **Upgrade**: `cloud/billing._upsert_subscription` fires
+- **Upgrade**: `silentshorts/cloud/billing._upsert_subscription` fires
   `videos.unmark_user_library` on the free→live transition (`became_live`). Per
   clip it checks the clean twin exists in R2, moves the history row and the
   project state to it, deletes the marked object and calls back into
@@ -21,7 +21,7 @@ and "upgrade to remove the watermark" would be false for clips already made.
   `_strip_burned_hook` drop it first, `_canonical_clip_file` globs
   `wm_*{clean}`.
 - **`/videos` guard** (`app._media_guard`): a job rendered for the free plan
-  carries a `.marked` dotfile (`watermarked.MARKER_FILE`, written by `main.py`,
+  carries a `.marked` dotfile (`watermarked.MARKER_FILE`, written by `silentshorts/pipeline/main.py`,
   restored with the project, removed on unmark; `_deliver` marks only jobs that
   carry it, so a legacy job whose canonical already has the mark never gets a
   second one). While it exists the clean deliverables of that job are refused,

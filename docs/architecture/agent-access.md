@@ -22,18 +22,18 @@
 - `GET /api/autopilot/videos`: latest uploads of the connected YouTube channel + what Autopilot did.
 - `POST /api/autopilot/run`: clip one channel video now (`{video_id}`).
 
-## API keys (`cloud/api_keys.py`)
+## API keys (`silentshorts/cloud/api_keys.py`)
 
 `osk_...` tokens, sha256-stored, created in the dashboard account page.
-`cloud/auth.get_current_user_optional` accepts them (`Bearer osk_...` or
+`silentshorts/cloud/auth.get_current_user_optional` accepts them (`Bearer osk_...` or
 `X-API-Key`) and resolves the owner, so metering, entitlement, plan priority and
 job ownership apply to agents with zero endpoint changes. Key management, OAuth
 consent, account erasure and billing (cancel, resume, retention offer, end
 trial, Stripe portal, invoices) refuse API-key auth
-(`cloud/auth.get_session_user_required`): a leaked key cannot mint
+(`silentshorts/cloud/auth.get_session_user_required`): a leaked key cannot mint
 replacements nor touch money.
 
-## MCP server (`mcp_server.py`, always mounted)
+## MCP server (`silentshorts/api/mcp_server.py`, always mounted)
 
 Stateless Streamable-HTTP JSON-RPC at `/mcp`, no SDK dependency, ~3 methods + 8
 tools. Each tool calls back into this same app in-process
@@ -41,7 +41,7 @@ tools. Each tool calls back into this same app in-process
 drift from the REST behaviour. Cloud mode 401s without a resolvable user;
 self-host stays BYOK-open.
 
-## stdio transport (`mcp_stdio.py`)
+## stdio transport (`silentshorts/api/mcp_stdio.py`)
 
 The same `handle_message` / `call_tool` as a subprocess, for hosts that only
 launch MCP servers as a command (e.g. Glama's Dockerfile deployments; a local
@@ -52,7 +52,7 @@ client can skip the web server). Two invariants:
 - The app's lifespan is entered (`router.lifespan_context`), which
   `ASGITransport` does not do on its own.
 
-## OAuth for MCP clients (`cloud/mcp_oauth.py`, cloud mode only)
+## OAuth for MCP clients (`silentshorts/cloud/mcp_oauth.py`, cloud mode only)
 
 claude.ai and ChatGPT connect by URL, so the server publishes RFC 9728/8414
 metadata under `/.well-known/`, accepts dynamic client registration
@@ -73,7 +73,7 @@ token, and a revoked key refuses it. `POST /oauth/revoke` (RFC 7009, always 200)
 revokes the OAuth key behind an access or refresh token; hand-made keys are
 never revocable there. The `/mcp` 401 carries
 `WWW-Authenticate: Bearer resource_metadata=...` so clients find the flow.
-The key carries the granted scope (`api_keys.scope`, `cloud/scopes.py`). The only
+The key carries the granted scope (`api_keys.scope`, `silentshorts/cloud/scopes.py`). The only
 scope is `silentshorts`, the default every client asks for (unknown scopes are
 dropped, not refused); it reaches `/mcp`, the endpoints the MCP tools call
 in-process and the download paths, and anything else is a 403 naming the
@@ -96,7 +96,7 @@ Fired once per job from `run_job_wrapper` after the R2 archive so the payload ca
 carry durable download links; survives redeploys via the resume manifest.
 `PUBLIC_API_URL` sets the absolute-URL base when behind a proxy.
 
-## Media links (`/videos`, `/thumbnails`; `media_auth.py`, `app._authorize_media`)
+## Media links (`/videos`, `/thumbnails`; `silentshorts/api/media_auth.py`, `app._authorize_media`)
 
 Cloud mode serves a job's files only to a request that has a path signature
 (`?exp=&sig=`, 24 h, `MEDIA_URL_TTL_SECONDS`), the owner's media token (`?mt=`

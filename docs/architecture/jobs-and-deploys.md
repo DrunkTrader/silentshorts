@@ -5,7 +5,7 @@
 Async job queue with semaphore-based concurrency control, sized by
 `MAX_CONCURRENT_JOBS` (default 5). Jobs auto-clean after 1 hour.
 
-The real limit on a GPU host is VRAM, not CPU: each `main.py` job holds Parakeet
+The real limit on a GPU host is VRAM, not CPU: each `silentshorts/pipeline/main.py` job holds Parakeet
 (onnxruntime CUDA), TransNetV2 (torch, ~2 GB at peak) and an NVENC session. When
 the card is full a cut fails as "Generic error in an external library" / exit
 187 with 0 bytes, TransNetV2 as CUDA OOM, and the reframe writer as a broken
@@ -150,7 +150,7 @@ parakeet text.
   rendered") is re-queued once after `AUTO_RETRY_DELAY_SECONDS` (30), keeping its
   reservation and transcript checkpoint (`AUTO_RETRY_LIMIT`=1). Content failures
   (no audio, private video, no clips found, policy block) are final. Inside a
-  job, `main.py` retries each failed clip once, alone, after a pause, and renders
+  job, `silentshorts/pipeline/main.py` retries each failed clip once, alone, after a pause, and renders
   clips best-score first.
 - **Shutdown is not failure**: when the drain timeout cancels a running job, the
   child is killed and the manifest + reservation are kept, so the next instance
@@ -189,7 +189,7 @@ log line); it has no Cancel button. The Telegram bot has one.
 ## Deploys and running jobs (handover + drain)
 
 Every push to `main` redeploys the API container as a rolling update: the NEW
-container starts before the old one stops and both share `output/`, so `app.py`
+container starts before the old one stops and both share `output/`, so `silentshorts/api/app.py`
 coordinates them:
 
 - Each instance writes its id to `output/.instance` at startup. An instance that
@@ -216,7 +216,7 @@ coordinates them:
   keep the interpreter alive). `/health` stays a plain liveness probe.
 - `/api/status` answers from disk for a job this instance never held, so a poll
   landing on either container during the handover is fine.
-- `main.py` leaves `.transcript_checkpoint.json` in the job dir so a re-run job
+- `silentshorts/pipeline/main.py` leaves `.transcript_checkpoint.json` in the job dir so a re-run job
   skips the paid transcription (download and Gemini repeat).
 
 Every deploy is a full build plus a handover, so batch small commits (tests,

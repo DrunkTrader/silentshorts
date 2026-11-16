@@ -1,4 +1,4 @@
-# Autopilot (`cloud/autopilot.py`, dashboard tab "Autopilot")
+# Autopilot (`silentshorts/cloud/autopilot.py`, dashboard tab "Autopilot")
 
 Cloud-only: every new video on the user's connected YouTube channel becomes clips
 on its own, and optionally the best ones are scheduled on their socials, one a
@@ -56,7 +56,7 @@ endpoint and to offer Twitch on the connect page. With the flag on:
   state these rules and the viewer-clips signal below (`TWITCH_AUTOPILOT_*` in
   `dashboard/seo/pages.js`); if they change, change the copy too.
 
-## Viewer clips as a selection signal (`twitch_signals.py`)
+## Viewer clips as a selection signal (`silentshorts/selection/twitch_signals.py`)
 
 Any job whose URL is a Twitch VOD (Autopilot or pasted) asks Helix, with an app
 token from `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET`, for the clips made from

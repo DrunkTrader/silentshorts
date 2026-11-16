@@ -78,7 +78,7 @@ reintroduce a "returning visitor goes straight to the app" shortcut: the static
 fallback is the landing, so swapping it for the app after hydration makes `/`
 jump, and every logo on the site must reach the landing.
 
-## Free tools (`/tools`, `free_tools.py`)
+## Free tools (`/tools`, `silentshorts/api/free_tools.py`)
 
 - The router is always mounted. `GET /api/tools/youtube-transcript` reads the
   captions a video **already has** on YouTube via yt-dlp (never the GPU, never

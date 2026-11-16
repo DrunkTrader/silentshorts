@@ -757,7 +757,7 @@ Concurrency is controlled by a semaphore configured with MAX_CONCURRENT_JOBS.</p
 
 <h2>What is the licence?</h2>
 <p>MIT for the core application, which means you can use it commercially, modify
-it and redistribute it. The <code>cloud/</code> directory, which contains
+it and redistribute it. The <code>silentshorts/cloud/</code> directory, which contains
 billing, managed keys and the hosted-service infrastructure, is carved out under
 a separate commercial licence and is not needed to self-host.</p>
 
@@ -780,7 +780,7 @@ ${faqBlock([
   },
   {
     q: 'What licence is SilentShorts released under?',
-    a: 'MIT for the core application. The cloud/ directory covering billing and hosted infrastructure is under a separate commercial licence and is not required for self-hosting.',
+    a: 'MIT for the core application. The silentshorts/cloud/ directory covering billing and hosted infrastructure is under a separate commercial licence and is not required for self-hosting.',
   },
 ])}
 `,
@@ -791,7 +791,7 @@ ${faqBlock([
     },
     {
       q: 'What licence is SilentShorts released under?',
-      a: 'MIT for the core application. The cloud/ directory covering billing and hosted infrastructure is under a separate commercial licence and is not required for self-hosting.',
+      a: 'MIT for the core application. The silentshorts/cloud/ directory covering billing and hosted infrastructure is under a separate commercial licence and is not required for self-hosting.',
     },
   ],
 })
@@ -2628,7 +2628,7 @@ ${faqBlock([
 ${sources([
   'Opus Clip tier minutes and prices checked 2026-07-27 on their public pricing page.',
   'Inset detection and layout accuracy figures are our own measurements on a 48-video internal corpus, 2026-08.',
-  'Silent-footage thresholds (8 words, 5 words per minute) and the vision fallback are in <code>main.py</code>; Gemini video token rates from Google\'s published pricing.',
+  'Silent-footage thresholds (8 words, 5 words per minute) and the vision fallback are in <code>silentshorts/pipeline/main.py</code>; Gemini video token rates from Google\'s published pricing.',
   `Inset, WIDE and screencast layout implementations in the project source at <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`,
 ])}
 
@@ -3003,7 +3003,7 @@ ${sources([
   `PS5 capture: PlayStation Support, <a href="${PS5_CAPTURE_URL}" rel="noopener">How to capture gameplay and screenshots on PS5 consoles</a>, <a href="${PS5_APP_URL}" rel="noopener">How to access PS5 game captures on PS App</a> and <a href="${PS5_GALLERY_URL}" rel="noopener">How to view screenshots and video clips on PS5 consoles</a>, checked ${GAMING_CHECKED}.`,
   `Xbox capture: Xbox Support, <a href="${XBOX_SHARE_URL}" rel="noopener">What's this Share button on my controller?</a>, and Xbox Wire, <a href="${XBOX_ONEDRIVE_URL}" rel="noopener">captures to OneDrive</a> (27 September 2023), checked ${GAMING_CHECKED}.`,
   `Platform lengths: <a href="${YT_SHORTS_URL}" rel="noopener">YouTube Help: Upload YouTube Shorts</a> (up to 3 minutes), checked 28 October 2026; Instagram Reels up to 3 minutes, announced January 2025, reported by <a href="${REELS_URL}" rel="noopener">Social Media Today</a>.`,
-  'Silent-footage thresholds (8 words, 5 words per minute) and the stretches of the vision pass: <code>main.py</code> and <code>clip_selection.py</code>; inset detection: <code>camera_inset.py</code>; WIDE layout: <code>screencast_layout.py</code>.',
+  'Silent-footage thresholds (8 words, 5 words per minute) and the stretches of the vision pass: <code>silentshorts/pipeline/main.py</code> and <code>silentshorts/selection/clip_selection.py</code>; inset detection: <code>silentshorts/layouts/camera_inset.py</code>; WIDE layout: <code>silentshorts/layouts/screencast_layout.py</code>.',
   `SilentShorts plan minutes: <a href="/pricing">pricing</a>. Source: <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`,
 ])}
 ${trademarkNote('Grand Theft Auto, GTA, Rockstar Games, PlayStation, Xbox and Twitch', 'Rockstar Games, Take-Two Interactive, Sony, Microsoft or Twitch')}
@@ -3198,7 +3198,7 @@ ${sources([
   `Video policy: <a href="${BLIZZARD_POLICY_URL}" rel="noopener">Blizzard Video Policy</a>, checked ${WOW_CHECKED}.`,
   `Recorders: <a href="${WOW_RECORDER_URL}" rel="noopener">Warcraft Recorder README</a> (supported flavours and OS, GPL-2.0); <a href="${OBS_REPLAY_URL}" rel="noopener">OBS forum guide to the replay buffer</a>; <a href="${AMD_REPLAY_URL}" rel="noopener">AMD support article DH3-023</a> (Instant Replay); <a href="${GAME_BAR_URL}" rel="noopener">Microsoft: Xbox Game Bar shortcuts</a>; <a href="${MAC_RECORD_URL}" rel="noopener">Apple: How to record the screen on Mac</a>. All checked ${WOW_CHECKED}.`,
   `Platform lengths: <a href="${YT_SHORTS_URL}" rel="noopener">YouTube Help: Upload YouTube Shorts</a>, checked 28 October 2026; Instagram Reels up to 3 minutes, reported by <a href="${REELS_URL}" rel="noopener">Social Media Today</a>.`,
-  'Silent-footage thresholds and stretches: <code>main.py</code> and <code>clip_selection.py</code>; inset detection: <code>camera_inset.py</code>; WIDE layout: <code>screencast_layout.py</code>.',
+  'Silent-footage thresholds and stretches: <code>silentshorts/pipeline/main.py</code> and <code>silentshorts/selection/clip_selection.py</code>; inset detection: <code>silentshorts/layouts/camera_inset.py</code>; WIDE layout: <code>silentshorts/layouts/screencast_layout.py</code>.',
   `SilentShorts plan minutes: <a href="/pricing">pricing</a>. Source: <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`,
 ])}
 ${trademarkNote('World of Warcraft, Warcraft, Blizzard and Twitch', 'Blizzard Entertainment, Microsoft or Twitch')}

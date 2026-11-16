@@ -414,7 +414,7 @@ ${faqBlock(thumbFaq)}
 
 ${sources([
   `<a href="https://support.google.com/youtube/answer/72431" rel="noopener">YouTube Help: Add video thumbnails</a> (1280x720, minimum width 640, 16:9, JPG/GIF/PNG, under 2 MB; custom thumbnails need a verified account), checked ${esc(CHECKED)}.`,
-  `Studio behaviour and limits: <code>thumbnail.py</code>, the <code>/api/thumbnail/*</code> routes in <code>app.py</code>, <code>cloud/config.py</code> and <code>dashboard/src/components/ThumbnailStudio.jsx</code>. Source: <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`,
+  `Studio behaviour and limits: <code>silentshorts/render/thumbnail.py</code>, the <code>/api/thumbnail/*</code> routes in <code>silentshorts/api/app.py</code>, <code>silentshorts/cloud/config.py</code> and <code>dashboard/src/components/ThumbnailStudio.jsx</code>. Source: <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`,
   `Plan prices and minutes: the <a href="${PRICING}">pricing table</a>, checked ${esc(longDate(PRICE_MODELS.silentshorts.checked))}.`,
 ])}
 `,
@@ -656,7 +656,7 @@ Weighing it against Arcads specifically? See <a href="/alternatives/arcads">the 
 ${faqBlock(ugcFaq)}
 
 ${sources([
-  `Pipeline, models and per-step estimates: <code>saasshorts.py</code> and <code>dashboard/src/components/SaaShortsTab.jsx</code>; limits in <code>cloud/config.py</code>. Source: <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`,
+  `Pipeline, models and per-step estimates: <code>silentshorts/integrations/saasshorts.py</code> and <code>dashboard/src/components/SaaShortsTab.jsx</code>; limits in <code>silentshorts/cloud/config.py</code>. Source: <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`,
   `Provider prices are the estimates the app shows, ${esc(CHECKED)}; fal.ai and ElevenLabs set the final price on their own pricing pages.`,
   `SendShort plans: our comparison data, checked ${esc(longDate(SENDSHORT.checked))}. See <a href="/alternatives/sendshort">SendShort compared</a>.`,
   `SilentShorts plan prices and minutes: the <a href="${PRICING}">pricing table</a>.`,

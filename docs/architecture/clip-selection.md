@@ -1,6 +1,6 @@
 # Clip selection
 
-## How many clips a job returns (`clip_selection.py`, `main.get_viral_clips`)
+## How many clips a job returns (`silentshorts/selection/clip_selection.py`, `main.get_viral_clips`)
 
 The count is not a setting, it is derived. `get_viral_clips` builds ~90 s scoring
 windows over the transcript, scores them in batches, shortlists the best
@@ -24,7 +24,7 @@ Two invariants keep that chain from leaking:
 `target_clips` on `/api/process` (dashboard: advanced options) pins both ends via
 `CLIP_TARGET_MIN` / `CLIP_TARGET_MAX` when the user wants an exact number.
 
-## Silent and mixed footage (`silent_signals.py`, `silent_copy.py`, `main.select_clips`)
+## Silent and mixed footage (`silentshorts/selection/silent_signals.py`, `silentshorts/selection/silent_copy.py`, `main.select_clips`)
 
 Speech is judged per 30 s stretch, not per video (`clip_selection.speech_density`,
 `silent_stretches`: runs of at least 30 s at or under 5 words/min; words count at
@@ -87,7 +87,7 @@ Clips are 30-60 s by default. A job may ask for its own band
 (`clip_min_seconds` / `clip_max_seconds` on `/api/process` and MCP, the
 dashboard's advanced options), passed to the pipeline as `CLIP_MIN_SECONDS` /
 `CLIP_MAX_SECONDS`: the minimum 5-85 s, the maximum 10-90 s and at least 5 s
-above the minimum. The limits are the `CLIP_*` constants in `clip_selection.py`;
+above the minimum. The limits are the `CLIP_*` constants in `silentshorts/selection/clip_selection.py`;
 the API, the MCP schema and `MediaInput.jsx` validate against the same numbers.
 A maximum asked for alone lowers the default minimum (max 20 gives 15-20), a
 minimum alone raises the default maximum. The prompts (`{min_secs}` /
@@ -125,19 +125,19 @@ The public `/gta-5-clips`, `/gta-6-clips`, `/wow-forever-clips` and `/platforms/
 these thresholds and the stretch sizes; if the behaviour changes, change
 `dashboard/seo/pages.js` and `dashboard/seo/clip-tools.js` too.
 
-## Local LLM for the moment picker (`llm_backend.py`)
+## Local LLM for the moment picker (`silentshorts/selection/llm_backend.py`)
 
 `LLM_BASE_URL` (+ `LLM_MODEL`, `LLM_API_KEY`) routes the two transcript passes of
 `get_viral_clips` to any OpenAI-compatible `/chat/completions` instead of Gemini;
 the response is validated with the same pydantic schemas Gemini enforces
-server-side, so `main.py` sees one shape. `main.score_batch_size` drops to 3
+server-side, so `silentshorts/pipeline/main.py` sees one shape. `main.score_batch_size` drops to 3
 windows per call there (local contexts are 4-8k; a truncated prompt scores garbage
 silently). Self-host `/api/process` then accepts a request without
 `X-Gemini-Key` and `/api/config.localLlm` tells the dashboard not to demand one.
 Frame-based stages (`layout_picker`, `screencast_layout`, `get_visual_clips`)
 stay on Gemini. Never wired in cloud mode: `BILLING_ENABLED` ignores it.
 
-## Range jobs: pieces instead of a source (`source_ranges.py`, `range_ingest.py`)
+## Range jobs: pieces instead of a source (`silentshorts/pipeline/source_ranges.py`, `silentshorts/pipeline/range_ingest.py`)
 
 Self-host URL jobs pick moments from the audio transcript alone, then download
 `[start - pad, end + pad]` pieces (`RANGE_PAD_SECONDS`, default 10; ranges closer

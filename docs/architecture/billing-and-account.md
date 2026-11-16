@@ -42,7 +42,7 @@ The wall (`TopUpModal`, context `wall`) opens on a 402 from `/api/process`. The
 left is offered "clip the first N min" next to the plans instead of being asked
 to pay before seeing a clip. The dashboard resubmits the same job with
 `max_minutes=N`. `reserve_process_minutes` reserves N (never more than the
-balance, whatever the client asks) and sets `MAX_SOURCE_MINUTES` for `main.py`,
+balance, whatever the client asks) and sets `MAX_SOURCE_MINUTES` for `silentshorts/pipeline/main.py`,
 whose `cap_source_duration` cuts the downloaded/uploaded file **in place** before
 anything reads it, so transcription, the layout picker, the editor and
 `/api/source` all see a short video. The cut travels in the resume manifest: a
@@ -81,7 +81,7 @@ balance, `reserve_process_minutes` decides on its own (the client sends no
 - `#/pricing?plan=<plan>[&interval=year]` opens that plan's checkout (through the sign-in when signed out) and drops the param afterwards.
 - Emails link to `#/pricing?src=email_<kind>`; checkouts from there are tagged `pricing_email_<kind>`. In nginx, `/pricing?<query>` redirects to the picker at `/#/pricing?<query>`; a bare `/pricing` goes to the homepage plan table (`/#pricing`).
 
-## Lifecycle emails (`cloud/lifecycle.py`)
+## Lifecycle emails (`silentshorts/cloud/lifecycle.py`)
 
 Welcome (minutes after sign-up), first-clip nudge (24-72 h, nothing processed),
 win-back (2-7 days after the first committed video, no plan; with
@@ -105,7 +105,7 @@ discount). Both join the one-per-user subscription row and skip comp plans
 (`sub_comp…`); `tests/test_lifecycle_emails.py` compiles every candidate query
 for Postgres, since a correlation mistake only fails at run time.
 
-## Cancel flow (`cloud/cancellation.py`, `CancelPlanModal.jsx`)
+## Cancel flow (`silentshorts/cloud/cancellation.py`, `CancelPlanModal.jsx`)
 
 Account → "Cancel subscription" opens three steps: reason (closed list,
 `CANCEL_REASONS`, plus an optional detail box), a 1-5 rating with an optional
@@ -144,7 +144,7 @@ any upgrade). `POST /api/billing/unpause` drops a hold not yet started, or ends
 a running one by charging a new period now (`billing_cycle_anchor=now`,
 window closed at that instant). Feedback rows store `outcome="paused"`.
 
-## Sign-up survey (`cloud/onboarding.py`, `OnboardingSurvey.jsx`)
+## Sign-up survey (`silentshorts/cloud/onboarding.py`, `OnboardingSurvey.jsx`)
 
 `signup_attribution` says which page a user came from, not why. Accounts younger
 than 7 days get one skippable screen before the clip tutorial (never over a
@@ -153,7 +153,7 @@ who they are. Closed lists mirrored in the JSX (a test checks), stored in
 `onboarding_surveys` (user-owned; a skip is a row too, so it is asked once), and
 tracked as `SignupSurveyAnswered` with one `goal_<x>` prop per goal.
 
-## Account erasure (GDPR art. 17, `cloud/account.py`)
+## Account erasure (GDPR art. 17, `silentshorts/cloud/account.py`)
 
 `DELETE /api/account` (dashboard: Account → Delete account) is immediate and
 irreversible: after the delete there is nothing left to authenticate a recovery
@@ -173,7 +173,7 @@ The order of the steps is the design, and each one is a failure mode:
    `tests/test_account_erasure.py` fails if a new table references `users.id`
    without joining that list.
 
-`app.py` registers a callback for the local working files, which record ownership
+`silentshorts/api/app.py` registers a callback for the local working files, which record ownership
 three ways: the `.owner` file clip jobs write (so jobs recovered from disk after a
 restart count too), `saas_jobs`, and `thumbnail_sessions`. That last one is the
 only thing that ever deletes generated thumbnails: the hourly sweep skips their

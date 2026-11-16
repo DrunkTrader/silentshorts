@@ -101,7 +101,7 @@ const SELF_FAQ = [
   },
   {
     q: 'Can I use self-hosted SilentShorts commercially?',
-    a: 'Yes. The core application is MIT-licensed, which allows commercial use, modification and redistribution. The cloud/ directory (billing and hosted-service code) is under a separate licence and is not needed to self-host.',
+    a: 'Yes. The core application is MIT-licensed, which allows commercial use, modification and redistribution. The silentshorts/cloud/ directory (billing and hosted-service code) is under a separate licence and is not needed to self-host.',
   },
   {
     q: 'How much does self-hosting really cost compared to Opus Clip or Vizard?',
@@ -915,7 +915,7 @@ const SRC_YT_3MIN =
   '<a href="https://support.google.com/youtube/answer/15424877" rel="noopener">YouTube Help: Understand three-minute YouTube Shorts</a> (uploads from 15 October 2024; Shorts over one minute with an active Content ID claim are blocked).'
 const SRC_FB_REELS =
   'Facebook treating new videos as Reels with no length or format limits: <a href="https://creators.facebook.com/blog/making-it-easier-to-create-videos-on-facebook" rel="noopener">Meta for Creators, 17 June 2025</a>; <a href="https://techcrunch.com/2025/06/17/facebook-announces-that-all-videos-on-its-platform-will-soon-be-shared-as-reels" rel="noopener">TechCrunch, 17 June 2025</a>.'
-const SRC_CAPTIONS = `Caption placement (about 15% of the frame height above the bottom edge) is <code>SAFE_MARGIN_V</code> in <code>subtitles.py</code> at <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`
+const SRC_CAPTIONS = `Caption placement (about 15% of the frame height above the bottom edge) is <code>SAFE_MARGIN_V</code> in <code>silentshorts/render/subtitles.py</code> at <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`
 
 /* ------------------------------------------- /how-to/instagram-reel-dimensions */
 
@@ -1875,7 +1875,7 @@ ${faqBlock(BEST_TIME_FAQ)}
 ${sources([
   '<a href="https://support.google.com/youtube/answer/9314416" rel="noopener">YouTube Help: Understand your YouTube audience</a> ("When your viewers are on YouTube", last 28 days, all devices).',
   'Commonly cited posting windows are from social-media scheduling blogs that aggregate other channels\' data; YouTube does not publish a best time to post.',
-  `Schedule a week (one clip a day at a chosen time and time zone) is <code>ScheduleWeekModal.jsx</code>; Autopilot's rules are in <code>cloud/autopilot.py</code> at <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`,
+  `Schedule a week (one clip a day at a chosen time and time zone) is <code>ScheduleWeekModal.jsx</code>; Autopilot's rules are in <code>silentshorts/cloud/autopilot.py</code> at <a href="${SITE.repo}" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`,
 ])}
 `,
     faq: BEST_TIME_FAQ,

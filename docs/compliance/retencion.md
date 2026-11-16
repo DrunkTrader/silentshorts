@@ -34,21 +34,21 @@ trabajo, es decir una hora después de la *última* subida de cualquier usuario.
 
 | Qué | Plazo | Dónde se aplica |
 |---|---|---|
-| Clips del plan gratuito | **7 días**, con aviso por email el día anterior | `cloud/videos.py`, `FREE_CLIP_RETENTION_DAYS` |
-| Clips y proyectos de plan de pago | Mientras la suscripción esté activa **+ 7 días** de gracia | `cloud/videos.py`, `VIDEO_RETENTION_GRACE_DAYS` |
-| Metadatos de proyecto (incluye la transcripción) | Igual que los clips del mismo trabajo | `cloud/videos.archive_job` |
-| Todo lo anterior, si el usuario borra la cuenta | **Inmediato** (purga por prefijo antes de tocar la base de datos) | `cloud/account.py` |
+| Clips del plan gratuito | **7 días**, con aviso por email el día anterior | `silentshorts/cloud/videos.py`, `FREE_CLIP_RETENTION_DAYS` |
+| Clips y proyectos de plan de pago | Mientras la suscripción esté activa **+ 7 días** de gracia | `silentshorts/cloud/videos.py`, `VIDEO_RETENTION_GRACE_DAYS` |
+| Metadatos de proyecto (incluye la transcripción) | Igual que los clips del mismo trabajo | `silentshorts/cloud/videos.archive_job` |
+| Todo lo anterior, si el usuario borra la cuenta | **Inmediato** (purga por prefijo antes de tocar la base de datos) | `silentshorts/cloud/account.py` |
 
 ## 3. Base de datos (PostgreSQL)
 
 | Qué | Plazo | Dónde se aplica |
 |---|---|---|
-| `users`, `subscriptions`, `credit_topups`, `usage_ledger`, `projects`, `user_videos`, `api_keys`, `upload_post_profiles`, `signup_attribution`, `oauth_codes`, `clip_expiry_warnings` | Mientras exista la cuenta; **inmediato** al borrarla | `cloud/account.USER_OWNED_TABLES` |
-| `magic_link_tokens` (incluye la IP que pidió el enlace) | **30 días** | `cloud/auth.py` |
-| **Declaración de derechos** (IP truncada a /24, user-agent, fecha, origen) | Con el proyecto al que pertenece → hasta 5 años, y se borra con la cuenta | `app.py` (captura) → `cloud/videos.archive_job` → `Project.state.rights_attestation` |
+| `users`, `subscriptions`, `credit_topups`, `usage_ledger`, `projects`, `user_videos`, `api_keys`, `upload_post_profiles`, `signup_attribution`, `oauth_codes`, `clip_expiry_warnings` | Mientras exista la cuenta; **inmediato** al borrarla | `silentshorts/cloud/account.USER_OWNED_TABLES` |
+| `magic_link_tokens` (incluye la IP que pidió el enlace) | **30 días** | `silentshorts/cloud/auth.py` |
+| **Declaración de derechos** (IP truncada a /24, user-agent, fecha, origen) | Con el proyecto al que pertenece → hasta 5 años, y se borra con la cuenta | `silentshorts/api/app.py` (captura) → `silentshorts/cloud/videos.archive_job` → `Project.state.rights_attestation` |
 | `account_deletions` (sha256 del email, sin la dirección) | **5 años** | `DELETION_LOG_RETENTION_DAYS` |
-| `stripe_events` (deduplicación de webhooks) | Mientras dure la retención de eventos de Stripe; sin datos personales | `cloud/billing.py` |
-| `proxy_usage` (host de la URL, id de trabajo; **sin usuario**) | Contabilidad de costes; sin datos personales | `cloud/proxy_ledger.py` |
+| `stripe_events` (deduplicación de webhooks) | Mientras dure la retención de eventos de Stripe; sin datos personales | `silentshorts/cloud/billing.py` |
+| `proxy_usage` (host de la URL, id de trabajo; **sin usuario**) | Contabilidad de costes; sin datos personales | `silentshorts/cloud/proxy_ledger.py` |
 
 ## 4. Navegador del usuario (localStorage, nunca cookies de terceros)
 
@@ -65,7 +65,7 @@ trabajo, es decir una hora después de la *última* subida de cualquier usuario.
 | Qué | Plazo | Nota |
 |---|---|---|
 | Log de aplicación (stdout del contenedor) | **7 días** en el log rotatorio de Docker | Requiere `max-size`/`max-file` en el runtime — ver "pendiente" abajo |
-| Alertas operativas a Telegram | Las conserva Telegram | **No contienen email ni título de vídeo** desde el 4-sep-2026: identifican al usuario por los 8 primeros caracteres de su uuid (`cloud/alerts.user_ref`) |
+| Alertas operativas a Telegram | Las conserva Telegram | **No contienen email ni título de vídeo** desde el 4-sep-2026: identifican al usuario por los 8 primeros caracteres de su uuid (`silentshorts/cloud/alerts.user_ref`) |
 | Copias de seguridad cifradas de PostgreSQL | **30 días** | `ops/pg_backup.sh` — la política promete que una supresión desaparece de toda copia en 30 días, y esto es lo único que lo hace cierto |
 | Analítica (OpenPanel, solo con consentimiento) | Identificadores 13 meses; datos brutos 25 meses | Instancia propia |
 

@@ -159,7 +159,7 @@ ${faqBlock([
 ])}
 
 ${sources([
-  `Autopilot rules: <code>cloud/autopilot.py</code> in the <a href="${SITE.repo}" rel="noopener">SilentShorts source</a>, checked 23 September 2026.`,
+  `Autopilot rules: <code>silentshorts/cloud/autopilot.py</code> in the <a href="${SITE.repo}" rel="noopener">SilentShorts source</a>, checked 23 September 2026.`,
   'Usage figures: SilentShorts Cloud billing ledger, all accounts aggregated, 24 August to 23 September 2026.',
 ])}
 `,
@@ -277,7 +277,7 @@ ${faqBlock([
 
 ${sources([
   '<a href="https://support.google.com/youtube/answer/1311392" rel="noopener">YouTube channel monetization policies</a> (inauthentic content, renamed from repetitious content on 15 July 2025), checked 23 September 2026.',
-  `Autopilot rules: <code>cloud/autopilot.py</code> in the <a href="${SITE.repo}" rel="noopener">SilentShorts source</a>; plan prices from the SilentShorts billing API, both checked 23 September 2026.`,
+  `Autopilot rules: <code>silentshorts/cloud/autopilot.py</code> in the <a href="${SITE.repo}" rel="noopener">SilentShorts source</a>; plan prices from the SilentShorts billing API, both checked 23 September 2026.`,
 ])}
 `,
   faq: [

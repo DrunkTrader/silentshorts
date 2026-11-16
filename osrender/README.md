@@ -1,6 +1,6 @@
 # osrender
 
-Single-pass GPU renderer for reframed clips. `gpu_render.py` hands it the
+Single-pass GPU renderer for reframed clips. `silentshorts/render/gpu_render.py` hands it the
 clip, a JSON plan and an output path:
 
     osrender <input.mp4> <plan.json> <output.mp4>

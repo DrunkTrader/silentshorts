@@ -9,7 +9,8 @@ this app), so stdio and HTTP can never answer differently.
 Why it exists: some hosts only launch MCP servers as a subprocess (Glama's
 Dockerfile deployments wrap a stdio command, and a local client that would
 rather not run a web server can do
-``claude mcp add silentshorts -- python mcp_stdio.py``). The hosted endpoint at
+``claude mcp add silentshorts -- python -m silentshorts.api.mcp_stdio`` from
+the repo root). The hosted endpoint at
 mcp.drunktrader.dev stays the HTTP one.
 
 Two things this transport has to get right:
