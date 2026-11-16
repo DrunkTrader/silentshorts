@@ -24,7 +24,7 @@ from google import genai
 from google.genai import types as genai_types
 
 import frame_sampler
-import gpu_decode
+from silentshorts.render import gpu_decode
 import gemini_worker
 import hook_grounding
 import layout_picker
@@ -39,7 +39,7 @@ from clip_selection import (build_timeline_windows, silent_stretches, build_tran
                             score_batches, shortlist_target,
                             snap_clip_to_words, trim_to_best,
                             vision_segments)
-from ffmpeg_utils import (video_encode_args, audio_encode_args, cut_clip, QUALITY,
+from silentshorts.render.ffmpeg_utils import (video_encode_args, audio_encode_args, cut_clip, QUALITY,
                           QUALITY_FAST, METADATA_SCRUB)
 from dotenv import load_dotenv
 import json
@@ -1402,7 +1402,7 @@ def auto_caption_clip(clip_path, transcript, clip_start, clip_end, split_ranges=
     if not transcript or not transcript.get('segments'):
         return None  # silent video: nothing to caption
     try:
-        import subtitles as _subs
+        from silentshorts.render import subtitles as _subs
         style = _subs.auto_caption_style(os.environ.get("AUTO_CAPTION_PRESET"))
         output_dir = os.path.dirname(clip_path)
         stem = os.path.basename(clip_path)
@@ -1457,7 +1457,7 @@ def auto_caption_clip(clip_path, transcript, clip_start, clip_end, split_ranges=
             return vf, generation_id
         marked = None
         if mark and os.path.exists(watermark_logo_path()):
-            import watermarked
+            from silentshorts.render import watermarked
             marked = (watermark_logo_path(), watermark_filter,
                       os.path.join(output_dir, watermarked.marked_name(out_path)))
         try:
@@ -1510,7 +1510,7 @@ def auto_hook_clip(clip_path, clip, captions=None, mark=False):
     except ValueError:
         seconds = 5.0
     try:
-        from hooks import add_hook_to_video, HOOK_STYLES
+        from silentshorts.render.hooks import add_hook_to_video, HOOK_STYLES
         if style not in HOOK_STYLES:
             style = "pill"
         output_dir = os.path.dirname(clip_path)
@@ -1533,7 +1533,7 @@ def auto_hook_clip(clip_path, clip, captions=None, mark=False):
                 output_dir, f"subtitled_{generation_id}_{os.path.basename(out_path)}")
             marked = None
             if mark and os.path.exists(watermark_logo_path()):
-                import watermarked
+                from silentshorts.render import watermarked
                 marked = (watermark_logo_path(), watermark_filter,
                           os.path.join(output_dir, watermarked.marked_name(captioned)))
             try:
@@ -1575,7 +1575,7 @@ def trim_subtitle_band(input_video, band):
     """
     if not band:
         return input_video
-    import burned_subtitles
+    from silentshorts.render import burned_subtitles
     root, ext = os.path.splitext(input_video)
     out = f"{root}_nosubs{ext or '.mp4'}"
     try:
@@ -1721,7 +1721,7 @@ def mark_delivery(final_path, marker=None):
     be made: the mark must never cost the user the clip (same fail-open rule
     apply_watermark has always had).
     """
-    import watermarked
+    from silentshorts.render import watermarked
     out_path = os.path.join(os.path.dirname(final_path),
                             watermarked.marked_name(final_path))
     if os.path.exists(out_path) and os.path.getsize(out_path) > 0:
@@ -2942,7 +2942,7 @@ if __name__ == '__main__':
         if (not args.skip_analysis
                 and os.environ.get("AUTO_CAPTIONS", "1").strip() != "0"):
             try:
-                import burned_subtitles
+                from silentshorts.render import burned_subtitles
                 _cap = cv2.VideoCapture(input_video)
                 _w = int(_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                 _h = int(_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -3198,7 +3198,7 @@ if __name__ == '__main__':
             if os.environ.get("WATERMARK") == "1":
                 # Tells the /videos guard that the clean twins in this
                 # directory are not for serving (watermarked.MARKER_FILE).
-                import watermarked
+                from silentshorts.render import watermarked
                 watermarked.mark_job(output_dir)
             with ThreadPoolExecutor(max_workers=min(clip_workers, len(shorts))) as pool:
                 # Best clip first: the pool starts work in submission order, so

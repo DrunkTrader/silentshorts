@@ -20,7 +20,7 @@ them with margin.
 """
 import os
 
-from ffmpeg_utils import blurred_backdrop
+from silentshorts.render.ffmpeg_utils import blurred_backdrop
 
 CORNER_MARGIN = 0.20   # a subject this far from an edge (as a fraction of the
                        # frame) still counts as anchored to it

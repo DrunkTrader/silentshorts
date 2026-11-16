@@ -7,10 +7,10 @@ import subprocess
 
 import pytest
 
-import gpu_render
+from silentshorts.render import gpu_render
 import slot_split
 import split_layout
-import subtitles
+from silentshorts.render import subtitles
 
 UP = "a" * 32
 UP2 = "b" * 32

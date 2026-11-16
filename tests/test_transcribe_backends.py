@@ -96,7 +96,7 @@ def test_parakeet_transcript_matches_contract(fake_parakeet, monkeypatch):
 
 
 def test_parakeet_words_survive_merge_continuation_words(fake_parakeet, monkeypatch):
-    from subtitles import merge_continuation_words
+    from silentshorts.render.subtitles import merge_continuation_words
     monkeypatch.setattr(tb, "_detect_language", lambda text: "es")
     t = tb._transcribe_with_parakeet("video.mp4")
     for seg in t["segments"]:

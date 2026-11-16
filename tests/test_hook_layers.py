@@ -67,7 +67,7 @@ class TestHookedOnDemand:
     (hooks.materialize); stripping the captions encodes it when needed."""
 
     def _recipe(self, tmp_path, monkeypatch):
-        import hooks
+        from silentshorts.render import hooks
         _touch(tmp_path, CLEAN)
         _touch(tmp_path, CAPTIONED_HOOKED)
         json_path, png_path = hooks.recipe_paths(str(tmp_path), HOOKED)
@@ -95,7 +95,7 @@ class TestHookedOnDemand:
         assert _strip_burned_hook(str(tmp_path), no_captions) == CLEAN
 
     def test_a_failed_encode_keeps_the_current_file(self, tmp_path, monkeypatch):
-        import hooks
+        from silentshorts.render import hooks
         self._recipe(tmp_path, monkeypatch)
         monkeypatch.setattr(hooks, "materialize", lambda *a: False)
         assert _strip_burned_captions(str(tmp_path), CAPTIONED_HOOKED) == CAPTIONED_HOOKED

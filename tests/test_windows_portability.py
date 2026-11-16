@@ -4,8 +4,8 @@ import subprocess
 
 import pytest
 
-import gpu_decode
-import gpu_render
+from silentshorts.render import gpu_decode
+from silentshorts.render import gpu_render
 
 
 def _no_nvidia_smi(*a, **kw):

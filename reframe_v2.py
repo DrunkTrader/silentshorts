@@ -22,14 +22,14 @@ import subprocess
 import tempfile
 
 import active_speaker
-import gpu_decode
-import gpu_render
+from silentshorts.render import gpu_decode
+from silentshorts.render import gpu_render
 import camera_inset
-import punch_in
+from silentshorts.render import punch_in
 import screencast_layout
 import layout_ranges
 import split_layout
-from ffmpeg_utils import (video_encode_args, blurred_backdrop, escape_filter_value,
+from silentshorts.render.ffmpeg_utils import (video_encode_args, blurred_backdrop, escape_filter_value,
                           QUALITY_FAST, METADATA_SCRUB)
 
 ANALYSIS_MAX_WIDTH = 640

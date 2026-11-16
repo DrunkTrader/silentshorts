@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-import hook_placement as hp
+from silentshorts.render import hook_placement as hp
 
 BOX_W, BOX_H = 0.85, 0.10   # a two-line pill hook on a 1080x1920 clip
 
@@ -143,7 +143,7 @@ class TestAddHookToVideo:
 
     @pytest.fixture
     def fake_ffmpeg(self, monkeypatch, tmp_path):
-        import hooks
+        from silentshorts.render import hooks
         calls = {}
         monkeypatch.setattr(hooks.subprocess, "check_output", lambda *a, **k: b"1080x1920\n")
 
@@ -162,7 +162,7 @@ class TestAddHookToVideo:
 
     def test_explicit_top_ignores_faces(self, fake_ffmpeg, monkeypatch, tmp_path):
         hooks, calls, video = fake_ffmpeg
-        import hook_placement
+        from silentshorts.render import hook_placement
         monkeypatch.setattr(hook_placement, "detect_faces",
                             lambda *a, **k: pytest.fail("explicit position must not detect"))
         assert hooks.add_hook_to_video(video, "Hello there", str(tmp_path / "out.mp4"), position="top",
@@ -171,7 +171,7 @@ class TestAddHookToVideo:
 
     def test_auto_moves_off_a_face(self, fake_ffmpeg, monkeypatch, tmp_path):
         hooks, calls, video = fake_ffmpeg
-        import hook_placement
+        from silentshorts.render import hook_placement
         face = (0.35, 0.20, 0.65, 0.34)
         monkeypatch.setattr(hook_placement, "detect_faces", lambda *a, **k: [[face]] * 6)
         result = hooks.add_hook_to_video(video, "Performance should always outweigh your words.",
@@ -318,7 +318,7 @@ class TestAddHookToVideo:
 
     def test_auto_keeps_the_hook_off_a_wide_picture(self, fake_ffmpeg, monkeypatch, tmp_path):
         hooks, calls, video = fake_ffmpeg
-        import hook_placement
+        from silentshorts.render import hook_placement
         monkeypatch.setattr(hook_placement, "detect_faces", lambda *a, **k: [[]] * 6)
         band = [0.295, 0.705]
         result = hooks.add_hook_to_video(
@@ -330,7 +330,7 @@ class TestAddHookToVideo:
 
     def test_auto_ignores_a_picture_it_cannot_clear(self, fake_ffmpeg, monkeypatch, tmp_path):
         hooks, calls, video = fake_ffmpeg
-        import hook_placement
+        from silentshorts.render import hook_placement
         monkeypatch.setattr(hook_placement, "detect_faces", lambda *a, **k: [[]] * 6)
         # A picture from the top margin to the captions: nowhere to go, so the
         # caption-only rule (the old spot) applies.
@@ -341,7 +341,7 @@ class TestAddHookToVideo:
 
     def test_auto_without_frames_keeps_the_top_spot(self, fake_ffmpeg, monkeypatch, tmp_path):
         hooks, calls, video = fake_ffmpeg
-        import hook_placement
+        from silentshorts.render import hook_placement
         monkeypatch.setattr(hook_placement, "detect_faces", lambda *a, **k: None)
         assert hooks.add_hook_to_video(video, "Hi", str(tmp_path / "out.mp4"), position="auto",
                                        layout_ranges=[]) is True

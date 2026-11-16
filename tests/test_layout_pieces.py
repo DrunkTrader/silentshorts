@@ -1,7 +1,7 @@
 """Layout picker and burned-subtitle probe on the pieces of a range job."""
 import pytest
 
-import burned_subtitles
+from silentshorts.render import burned_subtitles
 import layout_picker
 import range_ingest
 

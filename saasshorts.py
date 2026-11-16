@@ -18,7 +18,7 @@ import json
 import time
 import subprocess
 
-from ffmpeg_utils import video_encode_args, DELIVERY, mark_ai_generated
+from silentshorts.render.ffmpeg_utils import video_encode_args, DELIVERY, mark_ai_generated
 import httpx
 from urllib.parse import urljoin
 from typing import Optional, List, Dict, Callable

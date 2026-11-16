@@ -1,5 +1,5 @@
-import burned_subtitles
-from burned_subtitles import band_top, crop_filter
+from silentshorts.render import burned_subtitles
+from silentshorts.render.burned_subtitles import band_top, crop_filter
 
 
 class TestBandTop:

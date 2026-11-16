@@ -134,7 +134,7 @@ def screencast_filtergraph(orig_w, orig_h, out_w, out_h, face_centre, content):
     band (never cropped further) over a blurred backdrop; the speaker takes
     the rest of the height.
     """
-    from ffmpeg_utils import blurred_backdrop
+    from silentshorts.render.ffmpeg_utils import blurred_backdrop
 
     cx_, cw_ = content
     max_h = int(out_h * MAX_CONTENT_BAND)
@@ -462,7 +462,7 @@ def focus_filtergraph(orig_w, orig_h, out_w, out_h, crop):
     to bottom, so nothing is cut vertically, and the text comes out up to ~1.6x
     the size it has when the whole 16:9 screen is squeezed into 1080px.
     """
-    from ffmpeg_utils import blurred_backdrop
+    from silentshorts.render.ffmpeg_utils import blurred_backdrop
 
     x, w = crop
     fg_h = crop_content_height(orig_h, out_w, out_h, w)

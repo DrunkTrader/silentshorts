@@ -24,7 +24,7 @@ import subprocess
 import time
 import uuid
 
-from ffmpeg_utils import (METADATA_SCRUB, QUALITY_FAST, audio_encode_args,
+from silentshorts.render.ffmpeg_utils import (METADATA_SCRUB, QUALITY_FAST, audio_encode_args,
                           video_encode_args)
 
 # EDL limits. Deliberately generous — the editor is for humans fixing cuts,

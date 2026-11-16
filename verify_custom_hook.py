@@ -1,6 +1,6 @@
 import os
 try:
-    from hooks import create_hook_image
+    from silentshorts.render.hooks import create_hook_image
 except ImportError:
     print("⚠️ PIL not found locally. Run inside Docker.")
     exit(1)

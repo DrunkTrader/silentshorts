@@ -13,7 +13,7 @@ import os
 import pytest
 
 Image = pytest.importorskip("PIL.Image")
-thumbnail = pytest.importorskip("thumbnail")
+thumbnail = pytest.importorskip("silentshorts.render.thumbnail")
 
 TRAINED = b"trainedAlgorithmicMedia"
 

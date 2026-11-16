@@ -29,11 +29,11 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from starlette.background import BackgroundTask
 from pydantic import BaseModel
 from s3_uploader import upload_job_artifacts, list_all_clips, upload_actor_to_s3, list_actor_gallery, upload_video_to_gallery, list_video_gallery
-import recut
+from silentshorts.render import recut
 import slot_library
 import slot_split
 import layout_ranges
-import watermarked
+from silentshorts.render import watermarked
 import media_auth
 from jsonfile import write_json_atomic
 
@@ -1042,7 +1042,7 @@ def _strip_burned_captions(output_dir, filename, materialize=True):
     ``materialize`` is False (the caller strips the hook next and never opens
     it). Encodes: call it off the event loop.
     """
-    import hooks
+    from silentshorts.render import hooks
     filename = _strip_watermark_copy(output_dir, filename)
     while True:
         m = re.match(r'^subtitled_\d+_(.+)$', filename)
@@ -4227,7 +4227,7 @@ async def process_endpoint(
     # byte-for-byte; the dashboard sends an explicit value either way.
     if str(auto_hook).lower() in ("1", "true", "yes"):
         env["AUTO_HOOK"] = "1"
-        from hooks import HOOK_STYLES
+        from silentshorts.render.hooks import HOOK_STYLES
         if auto_hook_style in HOOK_STYLES:
             env["AUTO_HOOK_STYLE"] = auto_hook_style
         print(f"[auto-hook] job={job_id} style={env.get('AUTO_HOOK_STYLE', 'classic')}")
@@ -4278,7 +4278,7 @@ async def process_endpoint(
         print(f"[captions] job={job_id} auto-captions off")
     elif captions is not None:
         # captions=<preset name>: auto-captions on, in that CAPTION_PRESETS look.
-        from subtitles import CAPTION_PRESETS as _presets
+        from silentshorts.render.subtitles import CAPTION_PRESETS as _presets
         if str(captions).strip().lower() in _presets:
             env["AUTO_CAPTION_PRESET"] = str(captions).strip().lower()
 
@@ -4978,11 +4978,11 @@ async def _ensure_job_files(job_id: str, request: Request) -> bool:
         return False
 
 
-from editor import VideoEditor
-from subtitles import generate_srt, generate_ass, burn_subtitles, generate_srt_from_video, CAPTION_PRESETS
-from hooks import add_hook_to_video
-from translate import translate_video, get_supported_languages
-from thumbnail import (analyze_video_for_titles, refine_titles, generate_thumbnail,
+from silentshorts.render.editor import VideoEditor
+from silentshorts.render.subtitles import generate_srt, generate_ass, burn_subtitles, generate_srt_from_video, CAPTION_PRESETS
+from silentshorts.render.hooks import add_hook_to_video
+from silentshorts.render.translate import translate_video, get_supported_languages
+from silentshorts.render.thumbnail import (analyze_video_for_titles, refine_titles, generate_thumbnail,
                        generate_youtube_description, extract_face_frames)
 
 class EditRequest(BaseModel):
@@ -7039,7 +7039,7 @@ async def translate_clip(
     # AI Act art. 50(2): the voice in this file was synthesised, so the file
     # says so in a way a machine can read. Best-effort by design — see
     # ffmpeg_utils.mark_ai_generated.
-    from ffmpeg_utils import mark_ai_generated
+    from silentshorts.render.ffmpeg_utils import mark_ai_generated
     await loop.run_in_executor(
         None, lambda: mark_ai_generated(output_path, "AI voice dubbing"))
 

@@ -362,7 +362,7 @@ def test_describe_title_is_capped(monkeypatch):
 
 
 def test_description_prompt_is_bounded(monkeypatch):
-    import thumbnail
+    from silentshorts.render import thumbnail
     sent = {}
 
     class _Models:

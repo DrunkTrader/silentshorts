@@ -8,6 +8,8 @@ from google import genai
 from google.genai import types
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
+from silentshorts.paths import PROJECT_ROOT
+
 # Text/analysis model (titles, concepts, description). Deliberately NOT tied to
 # GEMINI_MODEL: the pipeline runs flash-lite for a closed-choice layout pick,
 # but titles are the one place where the creative gap between lite and flash
@@ -28,7 +30,7 @@ TITLE_MAX_CHARS = 65
 
 THUMB_W, THUMB_H = 1280, 720
 THUMB_MAX_BYTES = 2 * 1024 * 1024  # YouTube's upload limit
-THUMB_FONT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts", "Anton-Regular.ttf")
+THUMB_FONT = os.path.join(PROJECT_ROOT, "fonts", "Anton-Regular.ttf")
 TEXT_POSITIONS = ("left", "right", "top", "bottom")
 
 

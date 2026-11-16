@@ -14,7 +14,7 @@ import tempfile
 import cv2
 import numpy as np
 
-import gpu_decode
+from silentshorts.render import gpu_decode
 
 # Past this many frames ahead, one seek is cheaper than decoding forward to
 # the target (an NVENC cut's GOP is ~250 frames).

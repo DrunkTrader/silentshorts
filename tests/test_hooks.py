@@ -4,7 +4,7 @@ import os
 
 from PIL import Image, ImageDraw, ImageFont
 
-from hooks import (
+from silentshorts.render.hooks import (
     HOOK_STYLES,
     _break_long_word,
     _emoji_scale,
@@ -135,7 +135,7 @@ class TestCreateHookImage:
 def test_pill_hook_image_stacks_one_box_per_line(tmp_path):
     """Two lines of text -> two rows of box pixels with a boxless column
     beside the shorter one (it is its own pill, not one shared card)."""
-    from hooks import create_hook_image
+    from silentshorts.render.hooks import create_hook_image
     from PIL import Image
     out = tmp_path / "pill.png"
     path, w, h = create_hook_image("una frase bastante larga para partirse en dos lineas",

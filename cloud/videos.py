@@ -15,7 +15,7 @@ from . import database, storage, metering
 from .models import UserVideo, Subscription, Project, User, ClipExpiryWarning
 from .auth import get_current_user_required
 
-import watermarked
+from silentshorts.render import watermarked
 
 router = APIRouter()
 

@@ -30,7 +30,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
 
 import mcp_ui
-from subtitles import CAPTION_PRESETS, line_budget
+from silentshorts.render.subtitles import CAPTION_PRESETS, line_budget
 
 router = APIRouter()
 

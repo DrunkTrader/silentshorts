@@ -12,8 +12,8 @@ import subprocess
 
 import pytest
 
-import gpu_render
-from ffmpeg_utils import nvenc_available, _NVENC_ARGS, QUALITY_FAST
+from silentshorts.render import gpu_render
+from silentshorts.render.ffmpeg_utils import nvenc_available, _NVENC_ARGS, QUALITY_FAST
 
 pytestmark = pytest.mark.skipif(
     not (os.path.isfile(gpu_render.BIN) and nvenc_available()),
@@ -119,7 +119,7 @@ def test_punch_in_keeps_every_frame_and_zooms(source, tmp_path):
     each zoomed frame is that frame's box cropped and scaled."""
     import math
     import numpy as np
-    import punch_in
+    from silentshorts.render import punch_in
     n = _frames(source)
     xs = [int(656 + 300 * math.sin(i / 20)) for i in range(n)]
     boxes = punch_in.crop_boxes(xs, punch_in.zoom_curve(n, FPS, [1.0, 2.5], max_zoom=1.25),

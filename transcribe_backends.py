@@ -33,7 +33,7 @@ import tempfile
 import threading
 import time
 
-from subtitles import (
+from silentshorts.render.subtitles import (
     get_whisper_config,
     WHISPER_TRANSCRIBE_PARAMS,
     merge_continuation_words,

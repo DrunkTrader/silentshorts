@@ -3,8 +3,8 @@ import subprocess
 
 import pytest
 
-import ffmpeg_utils
-from ffmpeg_utils import (
+from silentshorts.render import ffmpeg_utils
+from silentshorts.render.ffmpeg_utils import (
     AI_DISCLOSURE,
     DELIVERY,
     INTERMEDIATE,

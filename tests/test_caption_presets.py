@@ -2,7 +2,7 @@
 import asyncio
 import re
 
-from subtitles import AUTO_CAPTION_STYLE, CAPTION_PRESETS, line_budget
+from silentshorts.render.subtitles import AUTO_CAPTION_STYLE, CAPTION_PRESETS, line_budget
 
 
 def test_dashboard_offers_every_server_preset():
@@ -82,7 +82,7 @@ def test_preset_fills_only_fields_not_sent():
 
 
 def test_auto_caption_style_overlays_a_named_preset():
-    import subtitles
+    from silentshorts.render import subtitles
     assert subtitles.auto_caption_style(None) == subtitles.AUTO_CAPTION_STYLE
     assert subtitles.auto_caption_style("nope") == subtitles.AUTO_CAPTION_STYLE
     s = subtitles.auto_caption_style("Hormozi")

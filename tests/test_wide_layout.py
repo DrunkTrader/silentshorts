@@ -9,8 +9,8 @@ import cv2
 import numpy as np
 import pytest
 
-import gpu_render
-import hook_placement
+from silentshorts.render import gpu_render
+from silentshorts.render import hook_placement
 import layout_ranges
 import reframe_v2
 import screencast_layout

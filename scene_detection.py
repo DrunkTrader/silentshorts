@@ -28,7 +28,7 @@ import numpy as np
 from scenedetect import open_video, SceneManager, FrameTimecode
 from scenedetect.detectors import ContentDetector
 
-import gpu_decode
+from silentshorts.render import gpu_decode
 
 # TransNetV2 input size (width x height), fixed by the trained model.
 _TN2_W, _TN2_H = 48, 27

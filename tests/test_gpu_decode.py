@@ -12,7 +12,7 @@ import types
 import numpy as np
 import pytest
 
-import gpu_decode
+from silentshorts.render import gpu_decode
 import reframe_v2
 
 

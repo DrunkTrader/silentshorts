@@ -20,7 +20,7 @@ import subprocess
 
 import layout_ranges
 import split_layout
-from ffmpeg_utils import (METADATA_SCRUB, QUALITY_FAST, audio_encode_args,
+from silentshorts.render.ffmpeg_utils import (METADATA_SCRUB, QUALITY_FAST, audio_encode_args,
                           video_encode_args)
 
 # The top slot's share. 40/60 gives the bottom slot 60% (the main clip there).
@@ -333,7 +333,7 @@ def perform_split(*, source_path, segments, spec, uploads, output_dir, clean_nam
     """
     import time
     import uuid
-    import recut
+    from silentshorts.render import recut
 
     run = runner or run_ffmpeg
     out_w, out_h = out_size

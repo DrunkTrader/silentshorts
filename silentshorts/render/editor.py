@@ -9,8 +9,8 @@ from google.genai import types
 from pydantic import BaseModel
 
 import gemini_worker
-from edit_builder import build_filter_string
-from ffmpeg_utils import video_encode_args, QUALITY, METADATA_SCRUB
+from silentshorts.render.edit_builder import build_filter_string
+from silentshorts.render.ffmpeg_utils import video_encode_args, QUALITY, METADATA_SCRUB
 
 
 class EditDecision(BaseModel):

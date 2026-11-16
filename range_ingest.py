@@ -62,7 +62,7 @@ def probe_pieces(output_dir, pieces, aspect, fits, dims, captions_on, skip_analy
     """The picks that need frames (layout picker, burned-in subtitle band),
     run once on the pieces. A vertical first piece skips both, as the
     whole-source path does. Returns the subtitle band or None."""
-    import burned_subtitles
+    from silentshorts.render import burned_subtitles
     import layout_picker
 
     captions_on = captions_on and not skip_analysis

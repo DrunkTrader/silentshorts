@@ -9,7 +9,7 @@ import os
 
 import pytest
 
-import recut
+from silentshorts.render import recut
 
 
 def _seg(start, end):

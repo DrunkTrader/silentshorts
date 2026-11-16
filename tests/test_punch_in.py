@@ -1,5 +1,5 @@
-import punch_in
-from punch_in import MAX_ZOOM, crop_boxes, sendcmd_lines, zoom_curve
+from silentshorts.render import punch_in
+from silentshorts.render.punch_in import MAX_ZOOM, crop_boxes, sendcmd_lines, zoom_curve
 
 
 class TestZoomCurve:

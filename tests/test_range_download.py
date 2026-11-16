@@ -118,7 +118,7 @@ def test_stock_range_func_gives_no_section_index():
 @pytest.mark.skipif(not shutil.which("ffmpeg"), reason="needs ffmpeg")
 def test_precise_cut_from_padded_piece(tmp_path):
     import subprocess
-    from ffmpeg_utils import cut_clip
+    from silentshorts.render.ffmpeg_utils import cut_clip
     # Luma encodes the source time as a 2 s sawtooth, so the first frame of a
     # cut says where in the source it starts. Keyframes only every 5 s.
     src = str(tmp_path / "src.mp4")

@@ -8,8 +8,8 @@ import urllib.request
 import uuid
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-from ffmpeg_utils import video_encode_args, QUALITY, METADATA_SCRUB, finished_before_crash
-import gpu_decode
+from silentshorts.render.ffmpeg_utils import video_encode_args, QUALITY, METADATA_SCRUB, finished_before_crash
+from silentshorts.render import gpu_decode
 
 
 def _truncate_bytes(text, max_bytes):
@@ -434,7 +434,7 @@ def _auto_place(video_path, text, target_box_width, hook_filename, font_scale, s
     face, a smaller text) with hook_placement. Returns {"image": (path, w, h),
     "y_px", "y", "scale"}, or None to fall back to the legacy top spot (no
     readable frames, no MediaPipe, or nothing fits between the bands)."""
-    import hook_placement
+    from silentshorts.render import hook_placement
     import layout_ranges as _layouts
 
     window_end = float(duration) if duration else hook_placement.DEFAULT_WINDOW

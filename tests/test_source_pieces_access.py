@@ -11,7 +11,7 @@ import pytest
 import source_ranges
 
 app = pytest.importorskip("app")
-import recut  # noqa: E402
+from silentshorts.render import recut  # noqa: E402
 
 JOB = "5a1f0c3e-0000-4000-8000-000000000005"
 PIECES = [{"file": "T.piece_1.mp4", "start": 90.0, "end": 140.0},

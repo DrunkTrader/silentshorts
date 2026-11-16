@@ -5,7 +5,7 @@ import subprocess
 import pytest
 
 import camera_inset
-import gpu_render
+from silentshorts.render import gpu_render
 import reframe_v2
 import screencast_layout
 import split_layout

@@ -1,6 +1,6 @@
 import os
 import shutil
-from hooks import create_hook_image
+from silentshorts.render.hooks import create_hook_image
 
 def verify():
     print("🧪 Verifying Hook Image Generation...")

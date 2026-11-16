@@ -3,9 +3,10 @@ import re
 import subprocess
 import sys
 
-from ffmpeg_utils import (video_encode_args, escape_filter_value, QUALITY,
+from silentshorts.render.ffmpeg_utils import (video_encode_args, escape_filter_value, QUALITY,
                           METADATA_SCRUB, finished_before_crash)
-import gpu_decode
+from silentshorts.render import gpu_decode
+from silentshorts.paths import PROJECT_ROOT
 
 
 _STDIO_CONFIGURED = False
@@ -652,7 +653,7 @@ def subtitles_filter(srt_path, alignment=2, fontsize=16,
 
     # Let libass see the fonts bundled with the app (e.g. Anton for Impact)
     # even when the system fontconfig has no cache for them.
-    fonts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+    fonts_dir = os.path.join(PROJECT_ROOT, "fonts")
     safe_fonts_dir = _escape_ffmpeg_filter_value(fonts_dir)
 
     # The first option is named explicitly (filename=) rather than positional:

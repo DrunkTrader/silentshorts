@@ -154,7 +154,7 @@ def test_job_env_carries_the_cap(monkeypatch):
 
 
 def test_nvenc_probe_never_waits_for_a_slot(monkeypatch):
-    import ffmpeg_utils
+    from silentshorts.render import ffmpeg_utils
     seen = {}
 
     def fake_run(cmd, **kwargs):

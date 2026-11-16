@@ -7,7 +7,7 @@ import pytest
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import thumbnail  # noqa: E402
+from silentshorts.render import thumbnail  # noqa: E402
 
 
 def test_burn_text_wraps_and_stays_in_its_half():

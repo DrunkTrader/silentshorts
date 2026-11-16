@@ -26,8 +26,8 @@ import subprocess
 import tempfile
 import time
 
-import gpu_decode
-from ffmpeg_utils import QUALITY_FAST, _NVENC_ARGS, nvenc_available
+from silentshorts.render import gpu_decode
+from silentshorts.render.ffmpeg_utils import QUALITY_FAST, _NVENC_ARGS, nvenc_available
 
 ENABLED = os.environ.get("GPU_RENDER", "1").strip() != "0"
 BIN = os.environ.get("OSRENDER_BIN", "/usr/local/bin/osrender")

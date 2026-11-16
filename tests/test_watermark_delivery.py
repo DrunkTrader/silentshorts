@@ -18,7 +18,7 @@ import os
 
 import pytest
 
-import watermarked
+from silentshorts.render import watermarked
 
 
 class TestNames:
