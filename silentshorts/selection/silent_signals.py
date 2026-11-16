@@ -33,7 +33,7 @@ def window_signals(windows, signals):
     and ``cut_density`` to non-speech ``windows`` in place; each is None when
     its signal does not cover the window. ``signals``: ``heatmap``, ``energy``
     (list), ``energy_step``."""
-    import heatmap_signals
+    from silentshorts.selection import heatmap_signals
     signals = signals or {}
     replay = heatmap_signals.window_replay(windows, signals.get("heatmap")) if signals.get("heatmap") else {}
     curve, step = signals.get("energy") or [], float(signals.get("energy_step") or ENERGY_STEP)

@@ -395,7 +395,7 @@ def build_timeline_windows(transcript_result, video_duration, signals=None,
     (``silent_signals.window_signals``). With silent stretches, speech windows
     are built per island of speech between them (stray words inside a stretch
     make none), ids renumbered. Silent windows are not ranked here; ``silent_signals.score_nonspeech`` does that."""
-    import silent_signals
+    from silentshorts.selection import silent_signals
 
     stretches = silent_stretches(transcript_result, video_duration)
     if not stretches:

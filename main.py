@@ -25,15 +25,15 @@ from google.genai import types as genai_types
 
 from silentshorts.layouts import frame_sampler
 from silentshorts.render import gpu_decode
-import gemini_worker
-import hook_grounding
+from silentshorts.selection import gemini_worker
+from silentshorts.selection import hook_grounding
 from silentshorts.layouts import layout_picker
-import llm_backend
-import twitch_signals
-import heatmap_signals
-import silent_copy
-import silent_signals
-from clip_selection import (build_timeline_windows, silent_stretches, build_transcript_windows, build_window_payload,
+from silentshorts.selection import llm_backend
+from silentshorts.selection import twitch_signals
+from silentshorts.selection import heatmap_signals
+from silentshorts.selection import silent_copy
+from silentshorts.selection import silent_signals
+from silentshorts.selection.clip_selection import (build_timeline_windows, silent_stretches, build_transcript_windows, build_window_payload,
                             bound_clips, detail_batches, merge_adjacent, neighbour_context, clip_count_targets,
                             clip_duration_bounds, dedupe_overlapping,
                             score_batches, shortlist_target,
@@ -3072,7 +3072,7 @@ if __name__ == '__main__':
             source_pieces = []  # what metadata records for the editor
             if range_mode:
                 import range_ingest
-                from clip_selection import clip_count_targets
+                from silentshorts.selection.clip_selection import clip_count_targets
                 n_picked = len(clips_data['shorts'])
                 clips_data['shorts'], piece_for, source_pieces = range_ingest.plan_pieces(
                     clips_data['shorts'], duration,

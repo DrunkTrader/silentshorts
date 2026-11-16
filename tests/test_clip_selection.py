@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from clip_selection import (
+from silentshorts.selection.clip_selection import (
     build_transcript_windows,
     clip_count_targets,
     dedupe_overlapping,
@@ -163,7 +163,7 @@ class TestClipCountTargets:
 
 class TestDetailPromptCarriesTheCount:
     def test_template_formats_with_the_targets(self):
-        gw = pytest.importorskip("gemini_worker")
+        gw = pytest.importorskip("silentshorts.selection.gemini_worker")
         low, high = clip_count_targets(5)
         prompt = gw.DETAIL_PROMPT_TEMPLATE.format(
             video_duration=300, language="es", min_clips=low, max_clips=high,

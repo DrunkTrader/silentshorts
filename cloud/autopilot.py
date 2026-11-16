@@ -589,7 +589,7 @@ async def _start_video(user, video: dict, trigger: str, max_minutes: int) -> dic
 async def twitch_stretch(video: dict, max_minutes: int):
     """``(start, end)`` of the ``max_minutes`` the stream's viewers clipped most,
     or None (no signal, no Twitch credentials, or the broadcast fits)."""
-    import twitch_signals
+    from silentshorts.selection import twitch_signals
     total = float(video.get("duration_seconds") or 0)
     length = float(max_minutes or DEFAULT_MAX_MINUTES) * 60.0
     if total and total <= length:

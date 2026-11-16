@@ -109,7 +109,7 @@ def rebase_segments(segments, range_start, range_end=None):
 def snap_segments(segments, transcript, source_duration):
     """Snap each segment's bounds onto word boundaries (ground truth beats
     millisecond arithmetic — same rationale as the pipeline's snapping)."""
-    from clip_selection import snap_clip_to_words
+    from silentshorts.selection.clip_selection import snap_clip_to_words
 
     words = transcript_words(transcript)
     if not words:

@@ -125,7 +125,7 @@ def _ask_gemini(frames, prompt, api_key):
     """One vision call; returns the parsed dict. Split out so tests can stub it."""
     from google import genai
     from google.genai import types as genai_types
-    import gemini_worker
+    from silentshorts.selection import gemini_worker
 
     client = genai.Client(api_key=api_key)
     model_name = os.environ.get("GEMINI_MODEL") or "gemini-3.1-flash-lite"
@@ -151,7 +151,7 @@ def reground(clip_path, clip, transcript, start, end) -> Optional[dict]:
               "keeping the transcript hook.")
         return None
     try:
-        import gemini_worker
+        from silentshorts.selection import gemini_worker
 
         times = sample_times(clip.get("layout_ranges"), float(end) - float(start))
         frames = frames_at(clip_path, times)

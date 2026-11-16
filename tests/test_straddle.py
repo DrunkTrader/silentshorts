@@ -1,6 +1,6 @@
 import json
 
-import clip_selection as cs
+from silentshorts.selection import clip_selection as cs
 
 
 def _tr(n=30, step=15.0):
@@ -63,7 +63,7 @@ def test_clip_spanning_two_windows_survives_snap():
 
 
 def test_prompt_size_under_budget():
-    import gemini_worker as gw
+    from silentshorts.selection import gemini_worker as gw
     tr = {"language": "en", "segments": [
         {"start": i * 15.0, "end": (i + 1) * 15.0, "text": "palabra " * 12} for i in range(120)]}
     ws = cs.build_transcript_windows(tr, 1800.0, window_seconds=135)
@@ -76,7 +76,7 @@ def test_prompt_size_under_budget():
 
 
 def test_prompt_allows_context_but_bounds_clip():
-    import gemini_worker as gw
+    from silentshorts.selection import gemini_worker as gw
     t = gw.DETAIL_PROMPT_TEMPLATE
     assert "Stay within the candidate window boundaries" not in t
     assert "context_before" in t and "context_after" in t

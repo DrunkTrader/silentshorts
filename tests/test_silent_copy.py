@@ -1,8 +1,8 @@
 import inspect
 
-import gemini_worker
-import llm_backend
-import silent_copy
+from silentshorts.selection import gemini_worker
+from silentshorts.selection import llm_backend
+from silentshorts.selection import silent_copy
 
 
 def _clips(n):

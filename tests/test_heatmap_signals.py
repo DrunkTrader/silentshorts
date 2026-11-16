@@ -1,4 +1,4 @@
-import heatmap_signals as hs
+from silentshorts.selection import heatmap_signals as hs
 
 W = [{"id": "a", "start": 0, "end": 10}, {"id": "b", "start": 10, "end": 20},
      {"id": "c", "start": 20, "end": 30}]
@@ -48,13 +48,13 @@ def test_blend_zero_weight_is_identity(monkeypatch):
 
 
 def test_prompt_contains_replay_rule_and_template_formats():
-    import gemini_worker as gw
+    from silentshorts.selection import gemini_worker as gw
     out = gw.SCORE_PROMPT_TEMPLATE.format(video_duration=1, language="en", windows_json="[]")
     assert "replay_heat" in out and "replay_peak" in out
 
 
 def test_payload_attaches_fields_only_when_present():
-    from clip_selection import build_window_payload
+    from silentshorts.selection.clip_selection import build_window_payload
     ws = [{"id": "a", "start": 0, "end": 10, "text": "t"}, {"id": "b", "start": 10, "end": 20, "text": "u"}]
     out = build_window_payload(ws, None, {"a": {"heat": 0.456, "peak": 0.9}})
     assert out[0]["replay_heat"] == 0.46 and out[0]["replay_peak"] == 0.9

@@ -10,8 +10,8 @@ import json
 import httpx
 import pytest
 
-import gemini_worker
-import llm_backend
+from silentshorts.selection import gemini_worker
+from silentshorts.selection import llm_backend
 
 
 @pytest.fixture

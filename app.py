@@ -1,5 +1,5 @@
 import os
-import llm_backend
+from silentshorts.selection import llm_backend
 import re
 import sys
 import uuid
@@ -4253,7 +4253,7 @@ async def process_endpoint(
         return int(val) if integer else val
 
     n_clips = _gen_control(target_clips, "target_clips", 1, 15, integer=True)
-    from clip_selection import CLIP_BAND_GAP, CLIP_MAX_CEILING, CLIP_MIN_FLOOR
+    from silentshorts.selection.clip_selection import CLIP_BAND_GAP, CLIP_MAX_CEILING, CLIP_MIN_FLOOR
     min_secs = _gen_control(clip_min_seconds, "clip_min_seconds",
                             CLIP_MIN_FLOOR, CLIP_MAX_CEILING - CLIP_BAND_GAP)
     max_secs = _gen_control(clip_max_seconds, "clip_max_seconds",

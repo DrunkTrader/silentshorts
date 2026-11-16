@@ -110,7 +110,7 @@ def detect(video_path, frames=None):
         from google.genai import types as genai_types
         from pydantic import BaseModel
 
-        import gemini_worker
+        from silentshorts.selection import gemini_worker
         from silentshorts.layouts import layout_picker
 
         class FrameSubtitle(BaseModel):

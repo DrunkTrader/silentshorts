@@ -378,7 +378,7 @@ def detect_content_ranges(video_path, scenes, fps):
     try:
         from google import genai
         from google.genai import types as genai_types
-        import gemini_worker
+        from silentshorts.selection import gemini_worker
 
         frames = _shot_frames(video_path, scenes, asked)
         keep = [(i, jpg) for i, jpg in zip(asked, frames) if jpg]

@@ -1,5 +1,5 @@
 """Viewer clips from a Twitch VOD as a hint for the moment picker."""
-import twitch_signals as ts
+from silentshorts.selection import twitch_signals as ts
 
 
 def test_parse_vod_id_accepts_vod_links_only():

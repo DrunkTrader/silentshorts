@@ -1,6 +1,6 @@
 """merge_rankings: one global ranking, and a small group is not starved by it."""
-import clip_selection as cs
-import silent_signals as ss
+from silentshorts.selection import clip_selection as cs
+from silentshorts.selection import silent_signals as ss
 
 
 def _sp(n):

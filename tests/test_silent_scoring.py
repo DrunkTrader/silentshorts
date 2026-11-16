@@ -1,4 +1,4 @@
-import silent_signals as ss
+from silentshorts.selection import silent_signals as ss
 
 
 def _w(i, heat=None, energy=None, start=None, peak=None):

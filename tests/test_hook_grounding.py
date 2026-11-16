@@ -7,8 +7,8 @@ detail pass only ever reads the transcript.
 """
 import pytest
 
-import gemini_worker
-import hook_grounding as hg
+from silentshorts.selection import gemini_worker
+from silentshorts.selection import hook_grounding as hg
 
 
 SCREEN = [{"start": 0, "end": 30, "layout": "screencast"}]

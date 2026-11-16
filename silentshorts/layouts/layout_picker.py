@@ -230,7 +230,7 @@ def pick(video_path, video_duration):
         # raises, and an unimportable SDK is just one more reason to fall back.
         from google import genai
         from google.genai import types as genai_types
-        import gemini_worker
+        from silentshorts.selection import gemini_worker
 
         frames = (sample_frames_pieces(video_path) if isinstance(video_path, (list, tuple))
                   else sample_frames(video_path))

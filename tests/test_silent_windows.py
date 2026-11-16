@@ -1,4 +1,4 @@
-import clip_selection as cs
+from silentshorts.selection import clip_selection as cs
 
 
 def _seg(a, b, n=40):

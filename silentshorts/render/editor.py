@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 
-import gemini_worker
+from silentshorts.selection import gemini_worker
 from silentshorts.render.edit_builder import build_filter_string
 from silentshorts.render.ffmpeg_utils import video_encode_args, QUALITY, METADATA_SCRUB
 

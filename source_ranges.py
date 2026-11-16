@@ -9,7 +9,7 @@ into a full download.
 import json
 import os
 
-from clip_selection import trim_to_best
+from silentshorts.selection.clip_selection import trim_to_best
 
 
 def _env_float(name, default):

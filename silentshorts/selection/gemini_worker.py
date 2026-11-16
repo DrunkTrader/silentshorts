@@ -10,7 +10,7 @@ from google import genai
 from google.genai import types as genai_types
 from pydantic import BaseModel
 
-from clip_selection import (clip_count_targets, clip_duration_bounds,
+from silentshorts.selection.clip_selection import (clip_count_targets, clip_duration_bounds,
                             lookup_model_prices)
 
 load_dotenv()

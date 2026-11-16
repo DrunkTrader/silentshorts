@@ -39,7 +39,7 @@ def _generic(clip, video_title, chapter):
 def fill_silent_copy(clips, run_stage, video_title, chapters=None, transcript=None, language="en"):
     """Fill the copy fields of ``clips`` in place. ``run_stage(prompt, schema)``
     returns ``(parsed_dict, cost)``; returns the cost list for the caller."""
-    import gemini_worker
+    from silentshorts.selection import gemini_worker
 
     if not clips:
         return []

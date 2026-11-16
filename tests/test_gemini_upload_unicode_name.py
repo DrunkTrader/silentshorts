@@ -12,7 +12,7 @@ import io
 import httpx
 import pytest
 
-import gemini_worker
+from silentshorts.selection import gemini_worker
 
 
 def _prepared_headers(file_arg, mime_type=None):
