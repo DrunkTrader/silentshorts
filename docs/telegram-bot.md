@@ -102,7 +102,7 @@ When the job completes, each clip goes through `POST /api/clip/split` (it is
 synchronous; the bot waits up to 30 minutes per clip) with the clip in one slot,
 the library item in the other, the ratio, audio, offset and `loop: true`. The
 bot then reads the clip back from `/api/status` (its `video_url` now names the
-split render) and sends that file; the approval buttons and the n8n upload use
+split render) and sends that file; the approval buttons and the upload use
 it too. If the split fails the plain clip is sent with a short note (an API
 4xx detail, otherwise just "the render failed").
 
@@ -122,9 +122,11 @@ is unchanged.
 
 Presets are per chat, in the bot's state file.
 
-## Approval and upload to YouTube (n8n)
+## Approval and upload to YouTube (webhook receiver)
 
-Set `N8N_UPLOAD_WEBHOOK_URL` (and `N8N_WEBHOOK_SECRET`) to get four buttons
+YouTube upload is currently off: it needs a webhook receiver that implements
+the multipart contract below, and the repository no longer ships one. Point
+`N8N_UPLOAD_WEBHOOK_URL` (and `N8N_WEBHOOK_SECRET`) at a compatible receiver to get four buttons
 under each clip: Upload to YouTube, Skip, Edit title, Schedule upload. Without
 the URL (or with the URL but no secret) the clips come without buttons and
 `/help` says so.
@@ -168,7 +170,7 @@ private anyway). Times are in `TELEGRAM_TIMEZONE`.
   protect the file from cleanup; it may be deleted after 24 h". What a keep
   does to the job directory: `docs/architecture/jobs-and-deploys.md`.
 
-The webhook contract (fixed with the n8n workflow):
+The webhook contract a receiver must implement:
 
 - `POST` multipart/form-data to `N8N_UPLOAD_WEBHOOK_URL`, header
   `X-SilentShorts-Secret: <N8N_WEBHOOK_SECRET>`, timeout 10 minutes.

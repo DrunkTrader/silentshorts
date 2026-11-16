@@ -51,7 +51,5 @@ runs a security scan first.
 ## Related
 
 - `cli/` is the same API as a zero-dependency CLI: `uvx silentshorts process <url> --wait`.
-- `examples/n8n/` has the same pipeline as importable n8n workflows, including a
-  daily channel autopilot with Telegram approval.
 - [drunktrader.dev/mcp](https://www.drunktrader.dev/mcp) documents the MCP server,
   and [api.drunktrader.dev/docs](https://api.drunktrader.dev/docs) the full API.

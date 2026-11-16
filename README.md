@@ -410,11 +410,6 @@ hermes skills install DrunkTrader/silentshorts/skills/silentshorts
 openclaw skills install @DrunkTrader/silentshorts
 ```
 
-### n8n
-
-An importable workflow (video URL in, published-ready clips out, no polling)
-lives in [`examples/n8n/`](examples/n8n/).
-
 ---
 
 ## Optional integrations
