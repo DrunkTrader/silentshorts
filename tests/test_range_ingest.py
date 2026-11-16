@@ -3,8 +3,8 @@ import os
 
 import pytest
 
-import range_ingest
-import source_ranges as sr
+from silentshorts.pipeline import range_ingest
+from silentshorts.pipeline import source_ranges as sr
 
 
 def clip(s, e, score=5):

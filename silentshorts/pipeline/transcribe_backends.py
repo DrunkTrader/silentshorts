@@ -381,7 +381,7 @@ def release_models():
     del whisper, parakeet
     # TransNetV2 is the other torch tenant an in-process pipeline leaves
     # behind (scene_detection keeps it as a module singleton too).
-    tn2 = sys.modules.get("scene_detection")
+    tn2 = sys.modules.get("silentshorts.pipeline.scene_detection")
     if tn2 is not None:
         tn2._tn2_model = None
     import gc

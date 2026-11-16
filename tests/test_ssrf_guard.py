@@ -108,7 +108,7 @@ class _FakeYDL:
 
 
 def _run_probe(monkeypatch, capsys, url):
-    import quality_probe
+    from silentshorts.pipeline import quality_probe
     _FakeYDL.seen = []
     monkeypatch.setitem(sys.modules, "yt_dlp", types.SimpleNamespace(YoutubeDL=_FakeYDL))
     monkeypatch.setattr(sys, "argv", ["quality_probe.py", "--url", url])

@@ -3,7 +3,7 @@ import pytest
 
 from silentshorts.render import burned_subtitles
 from silentshorts.layouts import layout_picker
-import range_ingest
+from silentshorts.pipeline import range_ingest
 
 PIECES = [{"file": f"T.piece_{i}.mp4", "start": 100.0 * i, "end": 100.0 * i + 30 + i}
           for i in range(1, 4)]
@@ -126,6 +126,6 @@ def test_range_path_never_opens_the_missing_whole_source():
 def test_hook_grounding_receives_absolute_start_and_end():
     import re
     from pathlib import Path
-    src = (Path(__file__).resolve().parent.parent / "main.py").read_text()
+    src = (Path(__file__).resolve().parent.parent / "silentshorts" / "pipeline" / "main.py").read_text()
     assert "hook_grounding.reground(clip_final_path, clip, transcript, start, end)" in src
     assert re.search(r"start = clip\['start'\]\s+end = clip\['end'\]", src)  # source seconds, not piece-relative

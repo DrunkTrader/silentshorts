@@ -6,7 +6,7 @@ it without the ML stack; main.py supplies ``download``.
 """
 import os
 
-import source_ranges as sr
+from silentshorts.pipeline import source_ranges as sr
 
 
 def plan_pieces(shorts, duration, download, min_keep=1):

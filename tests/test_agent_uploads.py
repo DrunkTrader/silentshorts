@@ -131,7 +131,7 @@ def test_delete_upload(dirs):
 
 
 def test_tmpfiles_link_is_refreshed_through_the_page():
-    import file_hosts
+    from silentshorts.pipeline import file_hosts
     stale = "https://tmpfiles.org/dl/1787841143.abc/wAwNGnPW0lXW/video.mp4"
     fresh = "https://tmpfiles.org/dl/1787841582.def/wAwNGnPW0lXW/video.mp4"
     seen = {}

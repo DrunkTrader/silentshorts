@@ -78,7 +78,7 @@ class TestSeamCaptions:
 
 class TestCaptionerReadsSidecar:
     def test_auto_caption_uses_sidecar_when_not_told(self, tmp_path, monkeypatch):
-        main = pytest.importorskip("main")
+        main = pytest.importorskip("silentshorts.pipeline.main")
         clip = str(tmp_path / "x.mp4")
         open(clip, "wb").close()
         layout_ranges.write(clip, [(0, 3, "SPLIT")])

@@ -8,7 +8,7 @@ import time
 import httpx
 import pytest
 
-import source_ranges
+from silentshorts.pipeline import source_ranges
 
 app = pytest.importorskip("app")
 from silentshorts.render import recut  # noqa: E402

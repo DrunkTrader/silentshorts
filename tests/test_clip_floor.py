@@ -9,7 +9,7 @@ import json
 
 import pytest
 
-main = pytest.importorskip("main")
+main = pytest.importorskip("silentshorts.pipeline.main")
 
 
 def _transcript(n_segments=40):

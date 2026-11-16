@@ -7,7 +7,7 @@ bytes) -> per-GB paid proxy (720p cost cap) -> conservative fallback. The
 """
 import pytest
 
-main = pytest.importorskip("main")
+main = pytest.importorskip("silentshorts.pipeline.main")
 
 plan = main.plan_download_attempts
 

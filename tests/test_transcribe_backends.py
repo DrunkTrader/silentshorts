@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-import transcribe_backends as tb
+from silentshorts.pipeline import transcribe_backends as tb
 
 
 class FakeFloat(float):
@@ -288,7 +288,7 @@ def test_release_models_drops_the_transnetv2_singleton_too(monkeypatch):
     import types
     fake = types.ModuleType("scene_detection")
     fake._tn2_model = object()
-    monkeypatch.setitem(sys.modules, "scene_detection", fake)
+    monkeypatch.setitem(sys.modules, "silentshorts.pipeline.scene_detection", fake)
     monkeypatch.setattr(tb, "_whisper_model", None)
     monkeypatch.setattr(tb, "_parakeet_model", None)
 
@@ -301,7 +301,7 @@ class TestHostAsrSlot:
     """Cross-process cap on GPU transcriptions (flock slots on the shared disk)."""
 
     def test_slots_are_exclusive_and_released(self, tmp_path):
-        import transcribe_backends as tb
+        from silentshorts.pipeline import transcribe_backends as tb
         a = tb.host_asr_slot(slots=2, lock_dir=str(tmp_path), poll=0.01)
         b = tb.host_asr_slot(slots=2, lock_dir=str(tmp_path), poll=0.01)
         with a, b:
@@ -311,7 +311,7 @@ class TestHostAsrSlot:
 
     def test_third_waits_until_one_frees(self, tmp_path):
         import threading, time
-        import transcribe_backends as tb
+        from silentshorts.pipeline import transcribe_backends as tb
         first = tb.host_asr_slot(slots=1, lock_dir=str(tmp_path), poll=0.01)
         first.__enter__()
         got = []
@@ -330,18 +330,18 @@ class TestHostAsrSlot:
         assert got and got[0] >= released
 
     def test_disabled_is_a_noop(self, tmp_path):
-        import transcribe_backends as tb
+        from silentshorts.pipeline import transcribe_backends as tb
         with tb.host_asr_slot(slots=0, lock_dir=str(tmp_path)) as s:
             assert s._fh is None
 
 
 class TestParakeetMemorySettings:
     def test_vad_batch_default_is_the_benchmarked_one(self):
-        import transcribe_backends as tb
+        from silentshorts.pipeline import transcribe_backends as tb
         assert tb.PARAKEET_VAD_BATCH == 4
 
     def test_cuda_provider_is_lean_with_cpu_fallback(self):
-        import transcribe_backends as tb
+        from silentshorts.pipeline import transcribe_backends as tb
         (name, opts), cpu = tb.parakeet_providers()
         assert name == "CUDAExecutionProvider" and cpu == "CPUExecutionProvider"
         assert opts["arena_extend_strategy"] == "kSameAsRequested"

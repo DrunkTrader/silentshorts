@@ -7,7 +7,7 @@ cookies + mweb with a PO token, or no cookies at all -> 1080p. The explicit
 """
 import pytest
 
-yt_clients = pytest.importorskip("yt_clients")
+yt_clients = pytest.importorskip("silentshorts.pipeline.yt_clients")
 
 
 def test_hd_needs_a_pot_provider():

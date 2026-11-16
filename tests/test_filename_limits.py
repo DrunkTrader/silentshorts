@@ -6,7 +6,7 @@ already being ~300 bytes, and the derived temp name pushed it further.
 """
 import pytest
 
-main = pytest.importorskip("main")          # cv2 etc., absent in minimal CI
+main = pytest.importorskip("silentshorts.pipeline.main")          # cv2 etc., absent in minimal CI
 hooks = pytest.importorskip("silentshorts.render.hooks")
 
 # ext4/APFS cap a single name at 255 bytes.

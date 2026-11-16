@@ -11,7 +11,7 @@ import types
 
 import pytest
 
-from yt_clients import NotASingleVideo, youtube_non_video_reason
+from silentshorts.pipeline.yt_clients import NotASingleVideo, youtube_non_video_reason
 
 
 @pytest.mark.parametrize("url", [
@@ -91,7 +91,7 @@ class TestTheProbeRefusesBeforeAnyRequest:
 
 def test_js_runtime_follows_what_is_on_path(monkeypatch):
     import shutil
-    import yt_clients
+    from silentshorts.pipeline import yt_clients
     paths = {"node": "/x/node"}
     monkeypatch.setattr(shutil, "which", lambda n: paths.get(n))
     assert yt_clients.js_runtimes() == {"node": {}}

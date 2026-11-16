@@ -18,12 +18,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from yt_clients import cookies_path as _cookies_path
+from silentshorts.paths import PROJECT_ROOT
+from silentshorts.pipeline.yt_clients import cookies_path as _cookies_path
 
 
 def _find_cookies_path():
     # Mirrors main.py's cookie discovery.
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = PROJECT_ROOT
     for candidate in [
         os.path.join(script_dir, 'www.youtube.com_cookies.txt'),
         os.path.join(script_dir, 'cookies.txt'),
@@ -47,7 +48,7 @@ def main() -> int:
     # real probe / download refuse the URL with their own message.
     try:
         from security_utils import assert_public_url
-        from yt_clients import youtube_non_video_reason
+        from silentshorts.pipeline.yt_clients import youtube_non_video_reason
         assert_public_url(args.url)
         if youtube_non_video_reason(args.url):
             raise ValueError("not a single video")
@@ -56,7 +57,7 @@ def main() -> int:
         return 0
     try:
         import yt_dlp
-        import ssrf_guard
+        from silentshorts.pipeline import ssrf_guard
 
         warnings = []
 

@@ -1,6 +1,6 @@
 import pytest
 
-import source_ranges as sr
+from silentshorts.pipeline import source_ranges as sr
 
 
 def clip(s, e, score=5):

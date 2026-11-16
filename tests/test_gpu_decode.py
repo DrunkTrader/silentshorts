@@ -14,6 +14,7 @@ import pytest
 
 from silentshorts.render import gpu_decode
 from silentshorts.layouts import reframe_v2
+from main_harness import stub_module
 
 
 # --- command rewrites -------------------------------------------------------
@@ -177,7 +178,7 @@ def fake_main(monkeypatch):
         DETECT_STRIDE=4, YOLO_FALLBACK_STRIDE=8, SCENE_CUT_RESET=True,
         detect_face_candidates=detect_face_candidates,
         detect_person_yolo=detect_person_yolo)
-    monkeypatch.setitem(sys.modules, "main", m)
+    stub_module(monkeypatch, "silentshorts.pipeline.main", m)
     return seen
 
 

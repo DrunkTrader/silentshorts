@@ -298,7 +298,7 @@ class _FakeYDL:
 def fake_ydl(monkeypatch):
     import sys
     import types
-    import ssrf_guard
+    from silentshorts.pipeline import ssrf_guard
     guarded_calls = []
 
     class _Guard:

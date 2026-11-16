@@ -193,25 +193,35 @@ def test_pipeline_code_reads_none_of_the_dropped_secrets():
     denylist would silently break jobs: fail here instead."""
     import ast
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    local = {f[:-3] for f in os.listdir(root) if f.endswith(".py")}
-    seen, stack = set(), ["main", "quality_probe"]
+
+    def source(mod):
+        """The file of a repo module (``a.b`` -> a/b.py or a/b/__init__.py)."""
+        base = os.path.join(root, *mod.split("."))
+        for path in (base + ".py", os.path.join(base, "__init__.py")):
+            if os.path.isfile(path):
+                return path
+        return None
+
+    seen, stack = set(), ["silentshorts.pipeline.main", "silentshorts.pipeline.quality_probe"]
     while stack:
         mod = stack.pop()
         if mod in seen:
             continue
         seen.add(mod)
-        src = open(os.path.join(root, mod + ".py"), encoding="utf-8").read()
+        src = open(source(mod), encoding="utf-8").read()
         for name in app_module.CHILD_ENV_DENYLIST:
             assert f'"{name}"' not in src and f"'{name}'" not in src, (mod, name)
         for node in ast.walk(ast.parse(src)):
             names = []
             if isinstance(node, ast.Import):
-                names = [a.name.split(".")[0] for a in node.names]
+                names = [a.name for a in node.names]
             elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module.split(".")[0]]
+                # `from pkg import mod` imports pkg.mod; `from mod import x`, mod.
+                names = [node.module] + [f"{node.module}.{a.name}" for a in node.names]
             for n in names:
-                assert n != "cloud", f"{mod} imports cloud/, which reads server secrets"
-                if n in local:
+                assert n.split(".")[0] != "cloud" and not n.startswith("silentshorts.cloud"), \
+                    f"{mod} imports cloud/, which reads server secrets"
+                if source(n):
                     stack.append(n)
 
 
@@ -323,7 +333,7 @@ import subprocess
 class TestSafetyCap:
     @pytest.fixture()
     def source(self, tmp_path):
-        main = pytest.importorskip("main")
+        main = pytest.importorskip("silentshorts.pipeline.main")
         path = tmp_path / "src.mp4"
         subprocess.run([
             "ffmpeg", "-y", "-loglevel", "error",

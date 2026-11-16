@@ -8,7 +8,7 @@ panned over to it. A cut must cut.
 """
 import pytest
 
-main = pytest.importorskip("main")  # needs cv2/mediapipe, absent in minimal CI
+main = pytest.importorskip("silentshorts.pipeline.main")  # needs cv2/mediapipe, absent in minimal CI
 
 W, H = 1920, 1080
 

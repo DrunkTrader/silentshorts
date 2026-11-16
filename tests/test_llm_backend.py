@@ -123,7 +123,7 @@ def test_server_errors_surface_with_status_and_url(local, monkeypatch):
 # --- main.py routing (needs the heavy deps; skipped on minimal CI) ------------
 
 def test_stage_routes_to_local_backend_and_retries_transient(local, monkeypatch):
-    main = pytest.importorskip("main")
+    main = pytest.importorskip("silentshorts.pipeline.main")
     monkeypatch.setattr(main.time, "sleep", lambda *_: None)
     calls = {"n": 0}
 
@@ -141,7 +141,7 @@ def test_stage_routes_to_local_backend_and_retries_transient(local, monkeypatch)
 
 
 def test_score_batch_shrinks_for_local_models(local, monkeypatch):
-    main = pytest.importorskip("main")
+    main = pytest.importorskip("silentshorts.pipeline.main")
     monkeypatch.delenv("LLM_SCORE_BATCH", raising=False)
     assert main.score_batch_size() == 3
     monkeypatch.setenv("LLM_SCORE_BATCH", "5")

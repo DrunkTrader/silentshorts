@@ -4,7 +4,7 @@ A stub model captures the kwargs; faster_whisper is never imported.
 """
 import types
 
-import transcribe_backends as tb
+from silentshorts.pipeline import transcribe_backends as tb
 
 
 class _Model:

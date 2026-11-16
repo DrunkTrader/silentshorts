@@ -7,7 +7,7 @@ died with "Gemini did not return usable clips".
 """
 import pytest
 
-main = pytest.importorskip("main")  # needs cv2/mediapipe, absent in minimal CI
+main = pytest.importorskip("silentshorts.pipeline.main")  # needs cv2/mediapipe, absent in minimal CI
 
 
 def _t(*texts):

@@ -85,7 +85,7 @@ class _FakeS3:
 class TestActorStorage:
     @pytest.fixture()
     def s3(self, monkeypatch):
-        s3_uploader = pytest.importorskip("s3_uploader")
+        s3_uploader = pytest.importorskip("silentshorts.pipeline.s3_uploader")
         fake = _FakeS3({
             "avatars/actor_1_ab12cd34.png": b"png",
             "avatars/actor_1_ab12cd34.json":

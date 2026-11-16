@@ -223,7 +223,7 @@ def detect_panel_scenes(video_path, scenes, strategies, samples=None):
     # Below the gate on purpose: main pulls torch/mediapipe, and the disabled
     # path (the default, and what CI exercises) must not pay that import.
     import cv2
-    import main as m
+    from silentshorts.pipeline import main as m
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():

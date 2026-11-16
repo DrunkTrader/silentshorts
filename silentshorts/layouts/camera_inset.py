@@ -199,7 +199,7 @@ def detect(video_path, samples=10):
     """
     import cv2
     import numpy as np
-    import main as m
+    from silentshorts.pipeline import main as m
     from silentshorts.layouts import screencast_layout
 
     cap = cv2.VideoCapture(video_path)
@@ -306,7 +306,7 @@ def detect_in_scene(video_path, start_f, end_f, samples=5):
     """
     import cv2
     import numpy as np
-    import main as m
+    from silentshorts.pipeline import main as m
     from silentshorts.layouts import screencast_layout
 
     if end_f - 1 < start_f:
@@ -362,7 +362,7 @@ def present_in_scene(video_path, box, start_f, end_f, samples=3):
     """
     import cv2
     import numpy as np
-    import main as m
+    from silentshorts.pipeline import main as m
     from silentshorts.layouts import screencast_layout
 
     if end_f - 1 < start_f:

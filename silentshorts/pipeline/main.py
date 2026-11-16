@@ -43,7 +43,8 @@ from silentshorts.render.ffmpeg_utils import (video_encode_args, audio_encode_ar
                           QUALITY_FAST, METADATA_SCRUB)
 from dotenv import load_dotenv
 import json
-from jsonfile import write_json_atomic
+from silentshorts.pipeline.jsonfile import write_json_atomic
+from silentshorts.paths import PROJECT_ROOT
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module='google.protobuf')
@@ -602,7 +603,7 @@ def analyze_scenes_strategy(video_path, scenes):
     return strategies
 
 def detect_scenes(video_path):
-    import scene_detection
+    from silentshorts.pipeline import scene_detection
     return scene_detection.detect_scenes(video_path)
 
 def get_video_resolution(video_path):
@@ -864,7 +865,7 @@ def download_youtube_video(url, output_dir=".", on_audio=None, allow_paid=True,
     """Download ``url`` with only public addresses resolvable (ssrf_guard): the
     checked URL is not the only one yt-dlp talks to (redirects, URLs read out
     of an extracted page, a DNS answer that changes after the check)."""
-    import ssrf_guard
+    from silentshorts.pipeline import ssrf_guard
     with ssrf_guard.guarded():
         return _download_youtube_video(url, output_dir, on_audio=on_audio, allow_paid=allow_paid,
                                        cap_minutes=cap_minutes, route_out=route_out,
@@ -932,10 +933,10 @@ def _download_youtube_video(url, output_dir=".", on_audio=None, allow_paid=True,
     assert_public_url(url)
     # Throwaway hosts agents fall back to (tmpfiles.org) hand out short-lived
     # signed links; refresh through the host's page so yt-dlp gets the file.
-    import file_hosts
+    from silentshorts.pipeline import file_hosts
     url = file_hosts.resolve(url)
     # Cloud mode rejects these at the probe; this is the self-host path.
-    from yt_clients import NotASingleVideo, youtube_non_video_reason
+    from silentshorts.pipeline.yt_clients import NotASingleVideo, youtube_non_video_reason
     reason = youtube_non_video_reason(url)
     if reason:
         raise NotASingleVideo(f"This link is {reason}.")
@@ -944,7 +945,7 @@ def _download_youtube_video(url, output_dir=".", on_audio=None, allow_paid=True,
     print("📥 Downloading video from YouTube...")
     step_start_time = time.time()
 
-    from yt_clients import cookies_path as _cookies_path
+    from silentshorts.pipeline.yt_clients import cookies_path as _cookies_path
     cookies_path = _cookies_path()
     cookies_path = _write_cookies_file(cookies_path)
     
@@ -977,8 +978,8 @@ def _download_youtube_video(url, output_dir=".", on_audio=None, allow_paid=True,
     # explicit `default,mweb` because the authed defaults alone return
     # "Video unavailable" on a share of videos, from every IP, and that was
     # what fed the per-GB proxy (6-sep-2026, verified in the prod container).
-    from yt_clients import hd_extractor_args, fallback_extractor_args
-    from yt_clients import js_runtimes
+    from silentshorts.pipeline.yt_clients import hd_extractor_args, fallback_extractor_args
+    from silentshorts.pipeline.yt_clients import js_runtimes
     _js = js_runtimes()
     hd_args = hd_extractor_args(_bgutil_http, _bgutil_script)
     fallback_args = fallback_extractor_args(_bgutil_http, _bgutil_script)
@@ -1077,7 +1078,7 @@ def _download_youtube_video(url, output_dir=".", on_audio=None, allow_paid=True,
                 'overwrites': True,
             }
             # Own thread: the guard is per thread, so it is entered again here.
-            import ssrf_guard
+            from silentshorts.pipeline import ssrf_guard
             with ssrf_guard.guarded(), yt_dlp.YoutubeDL(opts) as ydl:
                 res = ydl.process_ie_result(copy.deepcopy(info), download=True)
             path = ((res.get('requested_downloads') or [{}])[0].get('filepath')
@@ -1096,7 +1097,7 @@ def _download_youtube_video(url, output_dir=".", on_audio=None, allow_paid=True,
         no piece exists at all, so the ladder moves to the next route."""
         import copy
         import random
-        from source_ranges import piece_path, pending_pieces, record_pieces
+        from silentshorts.pipeline.source_ranges import piece_path, pending_pieces, record_pieces
 
         def _sections(inf, ydl, todo):
             for n in todo:
@@ -1156,7 +1157,7 @@ def _download_youtube_video(url, output_dir=".", on_audio=None, allow_paid=True,
         # download) resolve outside the Python guard: check them here. YouTube's
         # own CDN hosts are skipped (dozens of them, never internal).
         if not str(info.get('extractor_key') or info.get('ie_key') or '').lower().startswith('youtube'):
-            import ssrf_guard
+            from silentshorts.pipeline import ssrf_guard
             ssrf_guard.assert_public_urls(info)
         sanitized = sanitize_filename(info.get('title', 'youtube_video'))
         # Only when the whole source is far bigger than what was paid for: a
@@ -1644,8 +1645,7 @@ WATERMARK_OPACITY = 0.85
 
 
 def watermark_logo_path():
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "assets", "watermark.png")
+    return os.path.join(PROJECT_ROOT, "assets", "watermark.png")
 
 
 def watermark_filter(vw, vh, video="[0:v]", logo="[1:v]", out=""):
@@ -2046,7 +2046,7 @@ def _free_gpu_cache():
 
 def transcribe_video(video_path):
     print("🎙️  Transcribing video...")
-    from transcribe_backends import transcribe_media, release_models, host_asr_slot
+    from silentshorts.pipeline.transcribe_backends import transcribe_media, release_models, host_asr_slot
 
     # At most ASR_HOST_SLOTS jobs transcribe on the GPU at once, host-wide.
     # Inside the slot, the model's VRAM is handed back before the long render
@@ -2989,7 +2989,7 @@ if __name__ == '__main__':
 
         # 3. Transcribe — unless the video has no audio, in which case fall back
         # to Gemini vision (picks clips from the imagery instead of the speech).
-        from transcribe_backends import NoAudioError
+        from silentshorts.pipeline.transcribe_backends import NoAudioError
         transcript = None
         # Module handover (issue #68): another module already transcribed this
         # exact source with the same backend, so reuse its output. Any problem
@@ -3071,7 +3071,7 @@ if __name__ == '__main__':
             piece_for = {}      # clip index -> (piece file, piece start in source seconds)
             source_pieces = []  # what metadata records for the editor
             if range_mode:
-                import range_ingest
+                from silentshorts.pipeline import range_ingest
                 from silentshorts.selection.clip_selection import clip_count_targets
                 n_picked = len(clips_data['shorts'])
                 clips_data['shorts'], piece_for, source_pieces = range_ingest.plan_pieces(
@@ -3238,7 +3238,7 @@ if __name__ == '__main__':
 
     # Clean up original if requested
     if audio_path:
-        import range_ingest
+        from silentshorts.pipeline import range_ingest
         range_ingest.cleanup(output_dir, audio_path, source_pieces_used, args.keep_original)
     if args.url and not args.keep_original and os.path.exists(input_video):
         os.remove(input_video)

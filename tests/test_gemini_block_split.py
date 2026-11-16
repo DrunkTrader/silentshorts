@@ -1,6 +1,6 @@
 """A policy block on a batch of windows must bisect, not kill the job."""
 import pytest
-main = pytest.importorskip("main")
+main = pytest.importorskip("silentshorts.pipeline.main")
 from silentshorts.selection import gemini_worker
 
 

@@ -213,7 +213,7 @@ def test_resumed_partial_job_keeps_its_cut(dirs, monkeypatch):
 class TestCapSourceDuration:
     @pytest.fixture()
     def source(self, tmp_path):
-        main = pytest.importorskip("main")
+        main = pytest.importorskip("silentshorts.pipeline.main")
         path = tmp_path / "src.mp4"
         subprocess.run([
             "ffmpeg", "-y", "-loglevel", "error",

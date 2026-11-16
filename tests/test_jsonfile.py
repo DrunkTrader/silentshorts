@@ -9,8 +9,8 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import jsonfile  # noqa: E402
-from jsonfile import write_json_atomic  # noqa: E402
+from silentshorts.pipeline import jsonfile  # noqa: E402
+from silentshorts.pipeline.jsonfile import write_json_atomic  # noqa: E402
 
 
 def _leftovers(directory):

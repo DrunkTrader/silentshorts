@@ -28,14 +28,15 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from starlette.background import BackgroundTask
 from pydantic import BaseModel
-from s3_uploader import upload_job_artifacts, list_all_clips, upload_actor_to_s3, list_actor_gallery, upload_video_to_gallery, list_video_gallery
+from silentshorts.pipeline.s3_uploader import upload_job_artifacts, list_all_clips, upload_actor_to_s3, list_actor_gallery, upload_video_to_gallery, list_video_gallery
 from silentshorts.render import recut
 from silentshorts.layouts import slot_library
 from silentshorts.layouts import slot_split
 from silentshorts.layouts import layout_ranges
 from silentshorts.render import watermarked
 import media_auth
-from jsonfile import write_json_atomic
+from silentshorts.pipeline.jsonfile import write_json_atomic
+from silentshorts.paths import PROJECT_ROOT
 
 load_dotenv()
 
@@ -73,7 +74,9 @@ QUALITY_GATE_MIN_HEIGHT = int(os.environ.get("QUALITY_GATE_MIN_HEIGHT", "720"))
 # managed minutes and dies with "no usable clips" (prod 20-ago: 3 of 5 recent
 # failures were exactly this, one user retrying the same 24s video).
 MIN_SOURCE_SECONDS = int(os.environ.get("MIN_SOURCE_SECONDS", "45"))
-QUALITY_PROBE_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "quality_probe.py")
+# Pipeline children run as modules of the package, from the repository root.
+JOB_MODULE = "silentshorts.pipeline.main"
+QUALITY_PROBE_MODULE = "silentshorts.pipeline.quality_probe"
 
 # Server credentials the pipeline subprocesses (main.py, quality_probe.py) never
 # read: main.py and everything it imports use GEMINI_API_KEY / LLM_* / the
@@ -660,7 +663,7 @@ async def _reserve_after_job_limit(request, user, url, input_path, job_id, max_m
         else:
             minutes = await loop.run_in_executor(None, _metering.probe_file_minutes, input_path)
     except Exception as e:
-        from yt_clients import NotASingleVideo
+        from silentshorts.pipeline.yt_clients import NotASingleVideo
         if isinstance(e, NotASingleVideo):
             raise HTTPException(status_code=400, detail=(
                 f"{e} Paste the link of one video (youtube.com/watch?v=... "
@@ -1088,7 +1091,7 @@ async def _deliver(request, job_id, filename):
     # derivative already carries one and a copy would stack a second.
     if not watermarked.job_is_marked(output_dir):
         return filename
-    import main as _main
+    from silentshorts.pipeline import main as _main
     marked = await asyncio.get_event_loop().run_in_executor(
         None, _main.mark_delivery, os.path.join(output_dir, filename))
     return os.path.basename(marked)
@@ -1182,7 +1185,7 @@ def _reapply_captions(job_id, clip_index, video_path):
             return _restyle_captions(video_path, transcript, start, end,
                                      clip['caption_style'],
                                      clip.get('layout_ranges'))
-        import main as _main
+        from silentshorts.pipeline import main as _main
         return _main.auto_caption_clip(video_path, transcript, start, end)
     except Exception as e:
         print(f"⚠️  Could not re-apply captions to {video_path}: {e}")
@@ -1679,6 +1682,14 @@ def _clear_resume_manifest(job_id):
         print(f"⚠️ Could not clear resume manifest for {job_id}: {e}")
 
 
+def _current_job_cmd(cmd):
+    """A manifest written before the package layout runs ``main.py`` as a
+    script, which is no longer at the root: run the job module instead."""
+    if not cmd:
+        return cmd
+    return [a for x in cmd for a in (("-m", JOB_MODULE) if x == "main.py" else (x,))]
+
+
 def _resume_interrupted_jobs() -> set:
     """Re-enqueue jobs that were mid-processing when the server last stopped.
 
@@ -1774,7 +1785,7 @@ def _resume_interrupted_jobs() -> set:
         jobs[job_id] = {
             'status': 'queued',
             'logs': _TimedLog([f"♻️ Resuming your video after a server update (attempt {attempts})."]),
-            'cmd': m.get("cmd"),
+            'cmd': _current_job_cmd(m.get("cmd")),
             'env': env,
             'output_dir': job_path,
             'user_id': None if user_id is None else user_id,
@@ -2184,9 +2195,11 @@ PROXY_ALERT_GB = 100
 def _job_source_url(job) -> Optional[str]:
     """The ``-u`` argument of the job's main.py command, if it was a URL job."""
     cmd = list((job or {}).get('cmd') or [])
-    # The command is ``python -u main.py -u <url>``: skip past the script
-    # name first or the interpreter's own ``-u`` flag is what gets matched.
-    start = next((i + 1 for i, a in enumerate(cmd) if str(a).endswith('main.py')), 0)
+    # The command is ``python -u -m silentshorts.pipeline.main -u <url>``
+    # (``python -u main.py -u <url>`` before the package layout): skip past the
+    # module name first or the interpreter's own ``-u`` flag is what gets matched.
+    start = next((i + 1 for i, a in enumerate(cmd)
+                  if a == JOB_MODULE or str(a).endswith('main.py')), 0)
     for i in range(start, len(cmd) - 1):
         if cmd[i] in ('-u', '--url'):
             return cmd[i + 1]
@@ -3711,8 +3724,8 @@ async def _probe_youtube_quality(url: str) -> dict:
     def _run():
         try:
             proc = subprocess.run(
-                [sys.executable, QUALITY_PROBE_SCRIPT, "--url", url],
-                capture_output=True, timeout=75, env=child_env(),
+                [sys.executable, "-m", QUALITY_PROBE_MODULE, "--url", url],
+                capture_output=True, timeout=75, env=child_env(), cwd=PROJECT_ROOT,
             )
             return json.loads(proc.stdout.decode(errors="replace").strip() or "{}")
         except Exception as e:
@@ -3730,7 +3743,7 @@ async def _validate_source_url(url: str):
     metering probe check the same things again; this is the one in front of
     the quality probe, which used to have none."""
     from security_utils import assert_public_url, UnsafeURLError
-    from yt_clients import youtube_non_video_reason
+    from silentshorts.pipeline.yt_clients import youtube_non_video_reason
     try:
         await asyncio.get_event_loop().run_in_executor(None, assert_public_url, url)
     except UnsafeURLError as e:
@@ -4048,7 +4061,7 @@ async def process_estimate(req: EstimateRequest, request: Request):
                 minutes = await loop.run_in_executor(
                     None, functools.partial(_metering.probe_url_minutes, url, allow_paid=False))
             except Exception as e:
-                from yt_clients import NotASingleVideo
+                from silentshorts.pipeline.yt_clients import NotASingleVideo
                 if isinstance(e, NotASingleVideo):
                     return {"billing": True, "outcome": None, "error": str(e)}
                 return {"billing": True, "outcome": None}
@@ -4202,7 +4215,7 @@ async def process_endpoint(
     # outside Docker is whatever interpreter happens to be first — not the venv
     # running this server. Every job then dies on `import cv2`. The quality
     # probe above already gets this right.
-    cmd = [sys.executable, "-u", "main.py"] # -u for unbuffered
+    cmd = [sys.executable, "-u", "-m", JOB_MODULE] # -u for unbuffered
     env = child_env()
     if api_key:
         env["GEMINI_API_KEY"] = api_key # Override with key from request
@@ -4575,7 +4588,7 @@ def _locate_source_for_range(job_id: str, start=None, end=None):
                 meta = json.load(f)
             job_dir = os.path.join(OUTPUT_DIR, job_id)
             if meta.get('source_pieces'):
-                import source_ranges
+                from silentshorts.pipeline import source_ranges
                 piece = source_ranges.pick_piece(
                     [p for p in meta['source_pieces']
                      if os.path.exists(os.path.join(job_dir, os.path.basename(p['file'])))],
@@ -5686,7 +5699,7 @@ async def get_clip_scenes(job_id: str, clip_index: int, request: Request):
 
     def build():
         import cv2
-        import main as m
+        from silentshorts.pipeline import main as m
 
         # Stable for the files the browser fetches (no accumulation), unique
         # for the temp cut (no collision between overlapping requests).
@@ -6019,7 +6032,7 @@ def _slot_url_fetch(url, work_dir, allow_paid, route):
     """Blocking: the first SLOT_UPLOAD_MAX_SECONDS of ``url`` through the job
     download path (ssrf_guard, noplaylist, client list, cookies then anonymous,
     direct -> static [-> paid]). Returns (path or None, title)."""
-    from main import download_youtube_video
+    from silentshorts.pipeline.main import download_youtube_video
     cap = max(1.0, SLOT_UPLOAD_MAX_SECONDS - 1.0)  # a re-encoded range can run a frame long
     pieces, title = download_youtube_video(url, work_dir, allow_paid=allow_paid,
                                            route_out=route, ranges=[(0.0, cap)])
@@ -6033,8 +6046,8 @@ async def _slot_download_url(url, work_dir):
     if DISABLE_YOUTUBE_URL:
         raise HTTPException(status_code=403, detail="URL ingest is disabled on this deployment. Upload a file instead.")
     await _validate_source_url(url)
-    from main import is_youtube_url
-    from yt_clients import NotASingleVideo
+    from silentshorts.pipeline.main import is_youtube_url
+    from silentshorts.pipeline.yt_clients import NotASingleVideo
     loop = asyncio.get_event_loop()
     route = {}
     try:
@@ -6676,7 +6689,7 @@ async def add_subtitles(req: SubtitleRequest, request: Request):
             finally:
                 # The ASR models must not stay resident in the API process:
                 # they held 7.7 GB of VRAM idle (transcribe_backends.release_models).
-                import transcribe_backends
+                from silentshorts.pipeline import transcribe_backends
                 await loop.run_in_executor(None, transcribe_backends.release_models)
             if not success:
                 raise HTTPException(status_code=400, detail="No words found for this clip range.")
@@ -7721,7 +7734,7 @@ async def _probe_thumbnail_url(request, url, user):
         minutes = await loop.run_in_executor(
             None, functools.partial(_metering.probe_url_minutes, url, allow_paid=paid_allowed))
     except Exception as e:
-        from yt_clients import NotASingleVideo
+        from silentshorts.pipeline.yt_clients import NotASingleVideo
         if isinstance(e, NotASingleVideo):
             raise HTTPException(status_code=400, detail=str(e))
         raise HTTPException(status_code=400,
@@ -7739,7 +7752,7 @@ async def _probe_thumbnail_url(request, url, user):
 async def _download_thumbnail_source(url, session_id, paid_allowed=True, cap_minutes=None):
     """Download a Thumbnail Studio link in a worker thread (never on the event
     loop) and record any per-GB proxy bytes in the ledger, like a job does."""
-    from main import download_youtube_video
+    from silentshorts.pipeline.main import download_youtube_video
     route = {}
     loop = asyncio.get_event_loop()
     try:
@@ -7875,14 +7888,14 @@ async def thumbnail_upload(
                     url, session_id, paid_allowed=paid_allowed, cap_minutes=source_minutes)
                 thumbnail_sessions[session_id]["video_path"] = vpath
 
-            from main import transcribe_video
+            from silentshorts.pipeline.main import transcribe_video
             loop = asyncio.get_event_loop()
             try:
                 transcript = await loop.run_in_executor(None, transcribe_video, vpath)
             finally:
                 # See transcribe_backends.release_models: the API process is
                 # long-lived and the GPU is shared with every running job.
-                import transcribe_backends
+                from silentshorts.pipeline import transcribe_backends
                 await loop.run_in_executor(None, transcribe_backends.release_models)
             segments = transcript.get("segments", [])
             duration = segments[-1]["end"] if segments else 0
@@ -9134,7 +9147,7 @@ async def saasshorts_generate(
 
             def _fetch_actor():
                 # SSRF guard: block private / metadata hosts before fetching.
-                import ssrf_guard
+                from silentshorts.pipeline import ssrf_guard
                 safe_actor_url = assert_public_url(req.selected_actor_url)
                 with ssrf_guard.guarded(), httpx.Client(timeout=30.0) as client:
                     resp = client.get(safe_actor_url)

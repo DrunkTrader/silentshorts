@@ -33,7 +33,7 @@ def test_range_mode_gate(main, args, env, billing, expected):
 @pytest.fixture
 def fake_ydl(main, monkeypatch, tmp_path):
     import security_utils
-    import ssrf_guard
+    from silentshorts.pipeline import ssrf_guard
     FakeYDL.instances = []
     FakeYDL.fail_extract = staticmethod(lambda params: None)
     FakeYDL.fail_sections = {}
@@ -54,7 +54,7 @@ def _downloads(fake):
 
 
 def test_audio_only_opts(main, fake_ydl, tmp_path):
-    from yt_clients import hd_extractor_args, fallback_extractor_args
+    from silentshorts.pipeline.yt_clients import hd_extractor_args, fallback_extractor_args
     path, title = main._download_youtube_video(YT, str(tmp_path), audio_only=True)
     (dl,) = _downloads(fake_ydl)
     assert dl.params["format"] == "bestaudio[ext=m4a]/bestaudio"
@@ -109,7 +109,7 @@ def test_non_youtube_audio_never_uses_paid_proxy(main, fake_ydl, tmp_path, monke
 
 
 def test_release_models_called_after_audio_transcription(main, monkeypatch, tmp_path):
-    import transcribe_backends
+    from silentshorts.pipeline import transcribe_backends
     calls = []
     monkeypatch.setattr(transcribe_backends, "release_models", lambda: calls.append("release"))
     monkeypatch.setattr(transcribe_backends, "transcribe_media",

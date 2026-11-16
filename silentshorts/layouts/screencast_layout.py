@@ -168,7 +168,7 @@ def detect_faces_full_res(frame):
     screencast candidates only.
     """
     import cv2
-    import main as m
+    from silentshorts.pipeline import main as m
 
     h, w, _ = frame.shape
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -655,7 +655,7 @@ def detect_screencast_scenes(video_path, scenes, strategies, ranges, samples=6):
     # Below the gate on purpose: main pulls torch/mediapipe, and the disabled
     # path (the default, and what CI exercises) must not pay that import.
     import cv2
-    import main as m
+    from silentshorts.pipeline import main as m
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():

@@ -229,7 +229,7 @@ def test_post_status_only_answers_the_account_that_posted(monkeypatch):
 @pytest.mark.skipif(not shutil.which("ffmpeg") or not shutil.which("ffprobe"),
                     reason="needs ffmpeg")
 def test_cut_from_a_start_offset_happens_once(tmp_path):
-    main = pytest.importorskip("main")
+    main = pytest.importorskip("silentshorts.pipeline.main")
     path = str(tmp_path / "src.mp4")
     subprocess.run([
         "ffmpeg", "-y", "-loglevel", "error",

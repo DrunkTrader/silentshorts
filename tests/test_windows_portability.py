@@ -58,7 +58,7 @@ def test_nvenc_slot_is_a_noop_without_fcntl(monkeypatch, tmp_path):
 
 
 def test_cookies_path_falls_back_to_temp_dir_without_app(monkeypatch, tmp_path):
-    import yt_clients
+    from silentshorts.pipeline import yt_clients
     monkeypatch.delenv("COOKIES_FILE", raising=False)
     monkeypatch.setattr(yt_clients.os.path, "isdir", lambda p: False)
     monkeypatch.setattr(yt_clients.tempfile, "gettempdir", lambda: str(tmp_path))
@@ -71,7 +71,7 @@ def test_cookies_path_falls_back_to_temp_dir_without_app(monkeypatch, tmp_path):
 def test_cookies_file_is_written_private_and_never_logged(main, monkeypatch, tmp_path, capsys):
     import os
     import stat
-    import yt_clients
+    from silentshorts.pipeline import yt_clients
     monkeypatch.delenv("COOKIES_FILE", raising=False)
     monkeypatch.setattr(yt_clients.os.path, "isdir", lambda p: False)  # no /app
     monkeypatch.setattr(yt_clients.tempfile, "gettempdir", lambda: str(tmp_path))

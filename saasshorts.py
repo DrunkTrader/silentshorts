@@ -154,7 +154,7 @@ def scrape_website(url: str) -> dict:
 
     Only public addresses resolve while it runs (ssrf_guard): the per-hop
     checks below look the host up once, the connection looks it up again."""
-    import ssrf_guard
+    from silentshorts.pipeline import ssrf_guard
     with ssrf_guard.guarded():
         return _scrape_website(url)
 
@@ -1070,7 +1070,7 @@ def transcribe_audio_for_subs(audio_path: str) -> list:
     Transcribe audio with word-level timestamps via the configured ASR backend.
     Returns list of {"word": str, "start": float, "end": float}.
     """
-    from transcribe_backends import transcribe_media, release_models
+    from silentshorts.pipeline.transcribe_backends import transcribe_media, release_models
 
     print(f"[SaaSShorts] 🎙️ Transcribing audio for subtitles...")
     try:

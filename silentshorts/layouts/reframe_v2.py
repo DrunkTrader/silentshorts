@@ -353,7 +353,7 @@ def _trajectory_loop(next_frame, sparse, n_frames, scenes_boundaries,
     frame (None at the end). Dense: one call per frame, the loop ends with the
     stream. Sparse: ``n_frames`` iterations and a call only where a detector
     runs (``next_frame(frame_number)``)."""
-    import main as m
+    from silentshorts.pipeline import main as m
 
     xs = []
     frame_number = 0
@@ -426,7 +426,7 @@ def _sparse_trajectory(input_video, n_frames, on_gpu, small_w, small_h,
                        cameraman, tracker):
     """The trajectory decoding only the detector's frames (plus the last one,
     and anything past it, to prove the clip has exactly ``n_frames``)."""
-    import main as m
+    from silentshorts.pipeline import main as m
 
     wanted = _detection_frames(scenes_boundaries, scene_strategies, n_frames,
                                m.DETECT_STRIDE, m.SCENE_CUT_RESET)
@@ -590,7 +590,7 @@ def encode_scenes(input_video, specs, orig_w, orig_h, out_w, out_h, fps,
     The whole clip in one pass on the card when it can (gpu_render);
     otherwise one ffmpeg per scene and a concat, as always."""
     if logo:
-        import main as m
+        from silentshorts.pipeline import main as m
 
     video_in = None
     if gpu_render.usable(input_video):
@@ -662,7 +662,7 @@ def render(input_video, final_output_video, aspect_ratio, content_ranges=None,
     segment's own encode, instead of main.apply_watermark re-encoding the
     finished clip once more.
     """
-    import main as m
+    from silentshorts.pipeline import main as m
     content_ranges = content_ranges or []
 
     print("   🚀 Reframe engine v2 (ffmpeg-native render)")

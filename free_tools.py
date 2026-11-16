@@ -618,7 +618,7 @@ def fetch_tiktok_transcript(target_url: str, lang: Optional[str] = None) -> dict
     """Blocking: read the captions TikTok already shows for one video.
     Raises TranscriptError with a user-facing message."""
     import yt_dlp
-    import ssrf_guard
+    from silentshorts.pipeline import ssrf_guard
 
     errors = []
     for proxy in tiktok_routes():

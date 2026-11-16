@@ -70,7 +70,7 @@ def analyze_video_for_titles(api_key, video_path, transcript=None):
                "segments", "video_duration", "recommended" }
     """
     if transcript is None:
-        from main import transcribe_video
+        from silentshorts.pipeline.main import transcribe_video
         print("🎬 [Thumbnail] Transcribing video...")
         transcript = transcribe_video(video_path)
     else:
@@ -265,7 +265,7 @@ def extract_face_frames(video_path, session_id, n=5, samples=40):
     thumbnails dir. Returns [{"url", "path", "time", "face": [x, y, w, h]}].
     """
     import cv2
-    from main import detect_face_candidates
+    from silentshorts.pipeline.main import detect_face_candidates
 
     out_dir = os.path.join("output", "thumbnails", session_id, "frames")
     os.makedirs(out_dir, exist_ok=True)

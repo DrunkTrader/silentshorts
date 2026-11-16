@@ -19,6 +19,7 @@ import os
 import pytest
 
 from silentshorts.render import watermarked
+from main_harness import stub_module
 
 
 class TestNames:
@@ -55,7 +56,7 @@ class TestMarkDelivery:
     """The pipeline's last step on a free job: a wm_ copy next to the clean final."""
 
     def test_writes_the_copy_and_leaves_the_final_alone(self, tmp_path):
-        main = pytest.importorskip("main")
+        main = pytest.importorskip("silentshorts.pipeline.main")
         final = tmp_path / "subtitled_1_t_clip_1.mp4"
         final.write_bytes(b"clean")
         calls = []
@@ -72,7 +73,7 @@ class TestMarkDelivery:
         assert final.read_bytes() == b"clean"
 
     def test_reuses_an_existing_copy(self, tmp_path):
-        main = pytest.importorskip("main")
+        main = pytest.importorskip("silentshorts.pipeline.main")
         (tmp_path / "t_clip_1.mp4").write_bytes(b"clean")
         (tmp_path / "wm_t_clip_1.mp4").write_bytes(b"marked")
         served = main.mark_delivery(str(tmp_path / "t_clip_1.mp4"),
@@ -83,7 +84,7 @@ class TestMarkDelivery:
         """A failed mark still serves the clip, and still under the wm_ name:
         the /videos guard refuses the clean deliverables of a free job, so a
         clean name here would be a clip the user cannot play."""
-        main = pytest.importorskip("main")
+        main = pytest.importorskip("silentshorts.pipeline.main")
         (tmp_path / "t_clip_1.mp4").write_bytes(b"clean")
         served = main.mark_delivery(str(tmp_path / "t_clip_1.mp4"),
                                     marker=lambda *_: False)
@@ -151,7 +152,7 @@ class TestMediaGuard:
         # module stands in for it here (CI installs none of it).
         import sys
         import types
-        monkeypatch.setitem(sys.modules, "main", types.SimpleNamespace(
+        stub_module(monkeypatch, "silentshorts.pipeline.main", types.SimpleNamespace(
             mark_delivery=lambda path, marker=None: os.path.join(
                 os.path.dirname(path), "wm_" + os.path.basename(path))))
         assert asyncio.run(app._deliver(None, "new", "t_clip_1.mp4")) == "wm_t_clip_1.mp4"

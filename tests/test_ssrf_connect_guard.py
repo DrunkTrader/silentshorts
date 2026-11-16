@@ -12,7 +12,7 @@ import threading
 
 import pytest
 
-import ssrf_guard
+from silentshorts.pipeline import ssrf_guard
 
 
 def test_private_names_do_not_resolve_inside_the_guard():

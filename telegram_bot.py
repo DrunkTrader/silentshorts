@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 
 import httpx
 
-import jsonfile
+from silentshorts.pipeline import jsonfile
 from silentshorts.render.hooks import HOOK_STYLES
 from silentshorts.render.subtitles import CAPTION_PRESETS
 

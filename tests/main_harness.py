@@ -62,6 +62,14 @@ class _StubFinder:
         pass
 
 
+def stub_module(monkeypatch, name, module):
+    """Install ``module`` as ``name`` for one test: in sys.modules and on its
+    package, since ``from pkg import mod`` reads the package attribute first."""
+    parent, _, leaf = name.rpartition(".")
+    monkeypatch.setitem(sys.modules, name, module)
+    monkeypatch.setattr(importlib.import_module(parent), leaf, module, raising=False)
+
+
 @contextlib.contextmanager
 def light_main():
     before = set(sys.modules)
@@ -69,7 +77,7 @@ def light_main():
     finder = _StubFinder(roots)
     sys.meta_path.insert(0, finder)
     try:
-        yield importlib.import_module("main")
+        yield importlib.import_module("silentshorts.pipeline.main")
     finally:
         sys.meta_path.remove(finder)
         for name in set(sys.modules) - before:
@@ -77,3 +85,8 @@ def light_main():
             path = str(getattr(mod, "__file__", "") or "")
             if name.split('.')[0] in roots or (path.startswith(_ROOT) and "site-packages" not in path):
                 del sys.modules[name]
+                # `from silentshorts.pipeline import main` reads the package
+                # attribute first: drop it too, or the stubbed module lives on.
+                parent, _, leaf = name.rpartition(".")
+                if getattr(sys.modules.get(parent), leaf, None) is mod:
+                    delattr(sys.modules[parent], leaf)

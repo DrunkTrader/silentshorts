@@ -8,7 +8,7 @@ frame was enough, which is exactly when the cooldown is needed. Measured on a
 """
 import pytest
 
-main = pytest.importorskip("main")  # needs cv2/mediapipe, absent in minimal CI
+main = pytest.importorskip("silentshorts.pipeline.main")  # needs cv2/mediapipe, absent in minimal CI
 
 WIDTH = 1280
 COOLDOWN = 30

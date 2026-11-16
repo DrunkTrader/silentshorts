@@ -12,7 +12,7 @@ import os
 
 import pytest
 
-main = pytest.importorskip("main")  # needs cv2/mediapipe, absent in minimal CI
+main = pytest.importorskip("silentshorts.pipeline.main")  # needs cv2/mediapipe, absent in minimal CI
 
 TRANSCRIPT = {"text": "hola", "language": "es",
               "segments": [{"start": 0.0, "end": 1.0, "text": "hola", "words": []}]}

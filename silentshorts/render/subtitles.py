@@ -121,7 +121,7 @@ def transcribe_audio(video_path):
     Returns transcript in the same format as main.py for compatibility.
     """
     # Lazy import: transcribe_backends imports helpers from this module.
-    from transcribe_backends import transcribe_media
+    from silentshorts.pipeline.transcribe_backends import transcribe_media
 
     _log(f"🎙️  Transcribing audio from: {video_path}")
     transcript = transcribe_media(video_path)

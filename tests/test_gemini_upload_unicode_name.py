@@ -77,8 +77,8 @@ def test_every_whole_file_upload_goes_through_the_helper():
     import re
     root = pathlib.Path(__file__).resolve().parent.parent
     offenders = []
-    for name in ("main.py", "silentshorts/render/editor.py", "silentshorts/layouts/screencast_layout.py",
-                 "silentshorts/render/thumbnail.py"):
+    for name in ("silentshorts/pipeline/main.py", "silentshorts/render/editor.py",
+                 "silentshorts/layouts/screencast_layout.py", "silentshorts/render/thumbnail.py"):
         src = (root / name).read_text()
         if re.search(r"\.files\.upload\(", src):
             offenders.append(name)

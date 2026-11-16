@@ -69,7 +69,7 @@ class TestMainAnnouncesTheDeliveredFile:
         Announcing the pre-caption path would put the poller back on a file the
         pipeline is about to supersede, which is the bug this fixes.
         """
-        main_src = open("main.py", encoding="utf-8").read()
+        main_src = open("silentshorts/pipeline/main.py", encoding="utf-8").read()
         caption_at = main_src.index("captioned = auto_caption_clip(")
         # The free plan's served file is a wm_ copy of the captioned final
         # (mark_delivery), so the marker must also come after that step.

@@ -221,7 +221,7 @@ def detect_split_scenes(video_path, scenes, strategies, samples=None):
     touching the single-speaker material that is most of the corpus.
     """
     import cv2
-    import main as m
+    from silentshorts.pipeline import main as m
 
     if not ENABLED:
         return {}

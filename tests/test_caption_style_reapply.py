@@ -9,6 +9,7 @@ import json
 import os
 
 import pytest
+from main_harness import stub_module
 
 app_module = pytest.importorskip("app")
 
@@ -73,7 +74,7 @@ def test_no_recorded_style_keeps_the_default_look(tmp_path, monkeypatch):
     calls = []
     fake_main = types.SimpleNamespace(
         auto_caption_clip=lambda *a, **k: calls.append(a) or "auto.mp4")
-    monkeypatch.setitem(sys.modules, "main", fake_main)
+    stub_module(monkeypatch, "silentshorts.pipeline.main", fake_main)
     monkeypatch.setattr(app_module, "_restyle_captions",
                         lambda *a, **k: pytest.fail("no style was recorded"))
     assert app_module._reapply_captions(job_id, 0, video) == "auto.mp4"

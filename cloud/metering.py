@@ -183,11 +183,11 @@ def probe_url_minutes(url: str, allow_paid: bool = True) -> float:
     assert_public_url(url)
     # Throwaway hosts (tmpfiles.org) sign links with a short-lived stamp; take
     # the live one so the probe sees the file and not an HTML page.
-    import file_hosts
+    from silentshorts.pipeline import file_hosts
     url = file_hosts.resolve(url)
     # Free and first: a search / playlist / channel page is walked entry by
     # entry by yt-dlp and never yields a duration (yt_clients.youtube_non_video_reason).
-    from yt_clients import NotASingleVideo, youtube_non_video_reason
+    from silentshorts.pipeline.yt_clients import NotASingleVideo, youtube_non_video_reason
     reason = youtube_non_video_reason(url)
     if reason:
         raise NotASingleVideo(f"This link is {reason}.")
@@ -197,7 +197,7 @@ def probe_url_minutes(url: str, allow_paid: bool = True) -> float:
     # Same client lists as the download (yt_clients.py): the authed defaults
     # alone answer "Video unavailable" for a share of videos on every IP, and
     # each of those probes then paid the per-GB proxy for nothing.
-    from yt_clients import hd_extractor_args, fallback_extractor_args
+    from silentshorts.pipeline.yt_clients import hd_extractor_args, fallback_extractor_args
     hd_args = hd_extractor_args(bgutil_http, bgutil_script)
     # (extractor args, send the account cookies). The second attempt on each
     # route drops the cookies, exactly like the download's 'fallback-static'
@@ -308,7 +308,7 @@ def _probe_with_proxies(url, proxies, strategies, static_errors, paid, ck_path):
             if proxy:
                 opts["proxy"] = proxy
             try:
-                import ssrf_guard
+                from silentshorts.pipeline import ssrf_guard
                 with ssrf_guard.guarded(), yt_dlp.YoutubeDL(opts) as ydl:
                     info = ydl.extract_info(url, download=False)
                 duration = info.get("duration")

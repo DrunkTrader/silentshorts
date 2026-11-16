@@ -339,5 +339,5 @@ def perform_recut(*, input_path, segments, output_dir, clean_name,
 
 
 def _main_attr(name):
-    import main  # heavy — resolved only when a real render/caption runs
+    from silentshorts.pipeline import main  # heavy — resolved only when a real render/caption runs
     return getattr(main, name)

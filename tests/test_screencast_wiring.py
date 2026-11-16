@@ -23,6 +23,7 @@ from silentshorts.layouts.screencast_layout import (
     ranges_from_verdicts,
     shots_to_ask,
 )
+from main_harness import stub_module
 
 
 class FT:
@@ -50,7 +51,7 @@ def fake_main(monkeypatch):
     m.detect_scenes = lambda path: (scenes_of((0, 90), (90, 300)), 30.0)
     m.get_video_resolution = lambda path: (1920, 1080)
     m.analyze_scenes_strategy = lambda path, scenes: ['TRACK', 'GENERAL']
-    monkeypatch.setitem(sys.modules, "main", m)
+    stub_module(monkeypatch, "silentshorts.pipeline.main", m)
     return m
 
 

@@ -76,7 +76,7 @@ def test_file_and_url_together_or_neither_refused(lib):
 
 @needs_ffmpeg
 def test_url_download_is_range_capped_guarded_and_stored(lib, fake_ydl, mp4, monkeypatch):
-    import ssrf_guard
+    from silentshorts.pipeline import ssrf_guard
     monkeypatch.setattr(app_module, "SLOT_UPLOAD_MAX_SECONDS", 120.0)
     guarded = []
 

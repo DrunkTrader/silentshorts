@@ -1,7 +1,7 @@
 """The strongest clip renders first, so it is the first one the user sees."""
 import pytest
 
-main = pytest.importorskip("main")
+main = pytest.importorskip("silentshorts.pipeline.main")
 
 
 def test_best_score_first():

@@ -11,7 +11,7 @@ import subprocess
 import time
 import uuid
 
-from jsonfile import write_json_atomic
+from silentshorts.pipeline.jsonfile import write_json_atomic
 
 ALLOWED_EXTENSIONS = (".mp4", ".mov", ".webm", ".mkv")
 INDEX = "index.json"

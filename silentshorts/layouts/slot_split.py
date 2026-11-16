@@ -245,7 +245,7 @@ def estimate_face_centre(video_path, src_w, src_h, samples=8):
     try:
         import cv2
         import numpy as np
-        import main as m
+        from silentshorts.pipeline import main as m
         cap = cv2.VideoCapture(video_path)
         total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
         found = []
@@ -357,7 +357,7 @@ def perform_split(*, source_path, segments, spec, uploads, output_dir, clean_nam
         served = out_name
         if captions_transcript and captions_transcript.get("segments"):
             if captioner is None:
-                import main
+                from silentshorts.pipeline import main
                 captioner = main.auto_caption_clip
             captioned = captioner(out_path, captions_transcript, 0.0, duration)
             if captioned:
