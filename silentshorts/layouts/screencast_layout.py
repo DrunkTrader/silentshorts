@@ -338,8 +338,8 @@ def ranges_from_verdicts(scenes, fps, verdicts):
 def _shot_frames(video_path, scenes, indices):
     """JPEG bytes of each asked scene's middle frame (None where unreadable)."""
     import cv2
-    import frame_sampler
-    from layout_picker import _encode_frame
+    from silentshorts.layouts import frame_sampler
+    from silentshorts.layouts.layout_picker import _encode_frame
 
     mids = [(scenes[i][0].get_frames() + scenes[i][1].get_frames()) // 2
             for i in indices]

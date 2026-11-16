@@ -30,9 +30,9 @@ from starlette.background import BackgroundTask
 from pydantic import BaseModel
 from s3_uploader import upload_job_artifacts, list_all_clips, upload_actor_to_s3, list_actor_gallery, upload_video_to_gallery, list_video_gallery
 from silentshorts.render import recut
-import slot_library
-import slot_split
-import layout_ranges
+from silentshorts.layouts import slot_library
+from silentshorts.layouts import slot_split
+from silentshorts.layouts import layout_ranges
 from silentshorts.render import watermarked
 import media_auth
 from jsonfile import write_json_atomic

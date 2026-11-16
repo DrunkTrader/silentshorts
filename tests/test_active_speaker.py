@@ -1,4 +1,4 @@
-from active_speaker import (
+from silentshorts.layouts.active_speaker import (
     attribute_windows,
     hold,
     is_conversation,

@@ -435,7 +435,7 @@ def _auto_place(video_path, text, target_box_width, hook_filename, font_scale, s
     "y_px", "y", "scale"}, or None to fall back to the legacy top spot (no
     readable frames, no MediaPipe, or nothing fits between the bands)."""
     from silentshorts.render import hook_placement
-    import layout_ranges as _layouts
+    from silentshorts.layouts import layout_ranges as _layouts
 
     window_end = float(duration) if duration else hook_placement.DEFAULT_WINDOW
     if ranges is None:

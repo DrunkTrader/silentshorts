@@ -1,4 +1,4 @@
-from camera_inset import (
+from silentshorts.layouts.camera_inset import (
     INSET_ASPECT,
     inset_box,
     inset_filtergraph,

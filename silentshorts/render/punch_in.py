@@ -162,7 +162,7 @@ def emphasis_times(video_path, duration, window=BEAT_WINDOW,
     A stand-in for the hook words until the transcript is wired through. Returns
     [] for silent or unreadable audio, which simply means no punches.
     """
-    import active_speaker
+    from silentshorts.layouts import active_speaker
 
     envelope = active_speaker.audio_envelope(video_path, 0.0, duration,
                                              window_s=window)

@@ -42,7 +42,7 @@ def screen_video() -> bool:
     (verified on a product update video: every GENERAL scene was a stats
     card), even when the width gate did not upgrade it to SCREENCAST."""
     try:
-        import screencast_layout
+        from silentshorts.layouts import screencast_layout
         return bool(getattr(screencast_layout, "ENABLED", False))
     except Exception:
         return False
@@ -50,7 +50,7 @@ def screen_video() -> bool:
 
 def screen_ranges(ranges, on_screen_video=None):
     """(start, end) pairs, clip seconds, of the stretches rendered on-screen."""
-    import layout_ranges
+    from silentshorts.layouts import layout_ranges
     layouts = set(SCREEN_LAYOUTS)
     if screen_video() if on_screen_video is None else on_screen_video:
         layouts.add("general")

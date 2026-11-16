@@ -9,7 +9,7 @@ import httpx
 import pytest
 
 app_module = pytest.importorskip("app")
-import slot_library  # noqa: E402
+from silentshorts.layouts import slot_library  # noqa: E402
 
 needs_ffmpeg = pytest.mark.skipif(not shutil.which("ffmpeg"), reason="no ffmpeg")
 

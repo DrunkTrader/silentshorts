@@ -203,7 +203,7 @@ def detect_faces(video_path, window_start=0.0, window_end=None, samples=SAMPLES)
     cannot be read or MediaPipe is missing: the caller keeps the old spot."""
     try:
         import cv2
-        from frame_sampler import read_at
+        from silentshorts.layouts.frame_sampler import read_at
     except Exception:
         return None
     cap = cv2.VideoCapture(video_path)

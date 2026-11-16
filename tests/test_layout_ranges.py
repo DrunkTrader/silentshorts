@@ -7,7 +7,7 @@ import os
 
 import pytest
 
-import layout_ranges
+from silentshorts.layouts import layout_ranges
 from silentshorts.render import subtitles
 
 

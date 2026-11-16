@@ -8,8 +8,8 @@ import subprocess
 import pytest
 
 from silentshorts.render import gpu_render
-import slot_split
-import split_layout
+from silentshorts.layouts import slot_split
+from silentshorts.layouts import split_layout
 from silentshorts.render import subtitles
 
 UP = "a" * 32
@@ -113,7 +113,7 @@ def test_seam_y_follows_ratio():
 
 
 def test_seam_captions_are_pinned_at_the_ratio(tmp_path):
-    import layout_ranges
+    from silentshorts.layouts import layout_ranges
     clip = str(tmp_path / "c.mp4")
     slot_split.write_layout(clip, 4.0, 1920, "60/40")
     seams = layout_ranges.split_ranges(layout_ranges.read(clip))
@@ -136,7 +136,7 @@ def test_seam_captions_are_pinned_at_the_ratio(tmp_path):
 
 
 def test_seam_survives_recut_remap():
-    import layout_ranges
+    from silentshorts.layouts import layout_ranges
     ranges = layout_ranges.normalise([(0, 10, "split", None, 0.6)])
     moved = layout_ranges.remap(ranges, [{"start": 2, "end": 4}, {"start": 6, "end": 8}])
     assert [r["seam"] for r in moved] == [0.6, 0.6]

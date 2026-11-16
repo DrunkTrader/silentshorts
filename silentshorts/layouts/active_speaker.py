@@ -220,7 +220,7 @@ def speaker_xs(held, centres, crop_w, orig_w, n_frames, fps,
 
 def verdicts_for_scene(video_path, start_f, end_f, fps, centres):
     """Per-window speaker verdicts for one scene, from its two face centres."""
-    import split_layout
+    from silentshorts.layouts import split_layout
 
     start_s = start_f / fps
     duration_s = (end_f - start_f) / fps

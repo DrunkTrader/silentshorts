@@ -11,9 +11,9 @@ import types
 
 import pytest
 
-import reframe_v2
-import screencast_layout
-from screencast_layout import (
+from silentshorts.layouts import reframe_v2
+from silentshorts.layouts import screencast_layout
+from silentshorts.layouts.screencast_layout import (
     _parse_shots,
     fallback_ranges,
     focus_crop,
@@ -225,7 +225,7 @@ class TestFocusCrop:
 
 class TestInsetPerScene:
     def test_detection_must_sit_in_the_inset_box(self):
-        from camera_inset import _centre_inside
+        from silentshorts.layouts.camera_inset import _centre_inside
         box = (0, 500, 220, 220)
         assert _centre_inside((40, 540, 120, 120), box, 22)      # face in the bubble
         assert not _centre_inside((900, 300, 200, 200), box, 22)  # someone elsewhere
@@ -236,14 +236,14 @@ class TestInsetPerScene:
         assert "camera_inset.present_in_scene(" in src
 
     def test_stable_box_needs_agreement(self):
-        from camera_inset import stable_box
+        from silentshorts.layouts.camera_inset import stable_box
         still = [(100, 500, 300, 200)] * 3 + [(102, 498, 300, 200)]
         assert stable_box(still, 1920, 1080) is not None
         moving = [(100, 500, 300, 200), (700, 300, 300, 200), (1400, 100, 300, 200)]
         assert stable_box(moving, 1920, 1080) is None
 
     def test_overlay_box_is_centred_on_the_face(self):
-        from camera_inset import overlay_box
+        from silentshorts.layouts.camera_inset import overlay_box
         x, y, w, h = overlay_box((300, 400, 100, 100), 1920, 1080)
         assert abs((x + w / 2) - 350) <= 1
         assert y < 450 < y + h

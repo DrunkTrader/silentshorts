@@ -101,9 +101,9 @@ def apply(decision):
     must not quietly undo that. PER_SCENE_FLAGS go on for every decision,
     including "none" and a failed call.
     """
-    import active_speaker
-    import screencast_layout
-    import split_layout
+    from silentshorts.layouts import active_speaker
+    from silentshorts.layouts import screencast_layout
+    from silentshorts.layouts import split_layout
 
     modules = {"split_layout": split_layout,
                "screencast_layout": screencast_layout,

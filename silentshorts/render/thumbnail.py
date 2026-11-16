@@ -49,7 +49,7 @@ def _parse_json(text):
 def _frame_parts(video_path, n=TITLE_FRAMES, width=TITLE_FRAME_WIDTH):
     """Evenly spaced frames as Gemini image parts (empty list on any failure)."""
     try:
-        from layout_picker import sample_frames
+        from silentshorts.layouts.layout_picker import sample_frames
         return [types.Part.from_bytes(data=b, mime_type="image/jpeg")
                 for b in sample_frames(video_path, n=n, width=width)]
     except Exception as e:

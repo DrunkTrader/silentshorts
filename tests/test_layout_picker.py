@@ -1,8 +1,9 @@
 import sys
 import types
 
-import layout_picker
-from layout_picker import _module_flags, apply, pick
+import silentshorts.layouts
+from silentshorts.layouts import layout_picker
+from silentshorts.layouts.layout_picker import _module_flags, apply, pick
 
 
 def fake_modules(monkeypatch, **initial):
@@ -11,7 +12,10 @@ def fake_modules(monkeypatch, **initial):
     for name in ("split_layout", "screencast_layout", "active_speaker"):
         module = types.ModuleType(name)
         module.ENABLED = initial.get(name, False)
-        monkeypatch.setitem(sys.modules, name, module)
+        # Both: apply() does `from silentshorts.layouts import <name>`, which
+        # reads the package attribute before sys.modules.
+        monkeypatch.setitem(sys.modules, f"silentshorts.layouts.{name}", module)
+        monkeypatch.setattr(silentshorts.layouts, name, module, raising=False)
         made[name] = module
     return made
 

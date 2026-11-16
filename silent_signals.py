@@ -24,7 +24,7 @@ def _weight(name, default):
 def audio_energy_curve(audio_path, duration, step=ENERGY_STEP):
     """RMS per ``step`` seconds, 0-1 against the file's own loudest sample
     (``active_speaker.audio_envelope``; [] when there is no readable audio)."""
-    import active_speaker
+    from silentshorts.layouts import active_speaker
     return active_speaker.audio_envelope(audio_path, 0.0, float(duration), window_s=step)
 
 

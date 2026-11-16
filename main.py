@@ -23,11 +23,11 @@ import mediapipe as mp
 from google import genai
 from google.genai import types as genai_types
 
-import frame_sampler
+from silentshorts.layouts import frame_sampler
 from silentshorts.render import gpu_decode
 import gemini_worker
 import hook_grounding
-import layout_picker
+from silentshorts.layouts import layout_picker
 import llm_backend
 import twitch_signals
 import heatmap_signals
@@ -1434,7 +1434,7 @@ def auto_caption_clip(clip_path, transcript, clip_start, clip_end, split_ranges=
         out_path = os.path.join(output_dir, f"subtitled_{generation_id}_{stem}")
 
         if split_ranges is None:
-            import layout_ranges as _layouts
+            from silentshorts.layouts import layout_ranges as _layouts
             split_ranges = _layouts.split_ranges(_layouts.read(clip_path))
         if not _subs.generate_ass(
                 transcript, clip_start, clip_end, ass_path,
@@ -1754,7 +1754,7 @@ def process_video_to_vertical(input_video, final_output_video, aspect_ratio=ASPE
     # falls back to the v1 frame loop below so a v2 edge case can't kill jobs.
     if os.environ.get("REFRAME_ENGINE", "v2").strip().lower() != "v1":
         try:
-            import reframe_v2
+            from silentshorts.layouts import reframe_v2
             t0 = time.time()
             result = reframe_v2.render(input_video, final_output_video, aspect_ratio,
                                        force_strategy=force_strategy,
@@ -1806,7 +1806,7 @@ def process_video_to_vertical(input_video, final_output_video, aspect_ratio=ASPE
     # Same delivery floor as the v2 engine — a fallback render is still the clip
     # the user posts, so it must not ship sub-HD. The frame loop below already
     # resizes every cropped frame to these dims, so nothing else changes.
-    from reframe_v2 import delivery_size
+    from silentshorts.layouts.reframe_v2 import delivery_size
     OUTPUT_WIDTH, OUTPUT_HEIGHT = delivery_size(original_width, original_height,
                                                 aspect_ratio)
 
@@ -2924,7 +2924,7 @@ if __name__ == '__main__':
                 _w = int(_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                 _h = int(_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                 _cap.release()
-                from reframe_v2 import source_already_fits  # imports main back
+                from silentshorts.layouts.reframe_v2 import source_already_fits  # imports main back
                 # A source already shot vertical has no width to reorganise, and
                 # the render passes it through whatever the model says. Asking
                 # anyway costs a Gemini call per upload to be ignored.
@@ -2947,7 +2947,7 @@ if __name__ == '__main__':
                 _w = int(_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                 _h = int(_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                 _cap.release()
-                from reframe_v2 import source_already_fits
+                from silentshorts.layouts.reframe_v2 import source_already_fits
                 if not (_w and _h and source_already_fits(_w, _h, ASPECT_RATIO)):
                     source_subtitle_band = burned_subtitles.detect(input_video)
             except Exception as e:
@@ -3079,7 +3079,7 @@ if __name__ == '__main__':
                     lambda merged: download_youtube_video(args.url, output_dir, ranges=merged)[0],
                     min_keep=min(n_picked, clip_count_targets(n_picked)[0]))
                 source_pieces_used.extend(source_pieces)
-                from reframe_v2 import source_already_fits  # imports main back
+                from silentshorts.layouts.reframe_v2 import source_already_fits  # imports main back
 
                 def _dims(path):
                     _c = cv2.VideoCapture(path)
@@ -3144,7 +3144,7 @@ if __name__ == '__main__':
                     deliver_path = clip_final_path
                     # Which stretches were stacked (SPLIT): captions go on the
                     # seam there, and /api/subtitle needs it again later.
-                    import layout_ranges as _layouts
+                    from silentshorts.layouts import layout_ranges as _layouts
                     clip['layout_ranges'] = _layouts.read(clip_final_path)
                     # The hook was written from the transcript alone. When the
                     # render put this clip's meaning on the screen, rewrite hook

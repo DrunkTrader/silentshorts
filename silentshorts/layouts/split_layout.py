@@ -18,7 +18,7 @@ import os
 
 import numpy as np
 
-import frame_sampler
+from silentshorts.layouts import frame_sampler
 
 ENABLED = os.environ.get("SPLIT_LAYOUT", "0") == "1"
 

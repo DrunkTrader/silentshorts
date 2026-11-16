@@ -18,8 +18,8 @@ import os
 import re
 import subprocess
 
-import layout_ranges
-import split_layout
+from silentshorts.layouts import layout_ranges
+from silentshorts.layouts import split_layout
 from silentshorts.render.ffmpeg_utils import (METADATA_SCRUB, QUALITY_FAST, audio_encode_args,
                           video_encode_args)
 

@@ -11,10 +11,10 @@ import pytest
 
 from silentshorts.render import gpu_render
 from silentshorts.render import hook_placement
-import layout_ranges
-import reframe_v2
-import screencast_layout
-from screencast_layout import (
+from silentshorts.layouts import layout_ranges
+from silentshorts.layouts import reframe_v2
+from silentshorts.layouts import screencast_layout
+from silentshorts.layouts.screencast_layout import (
     action_window_centre,
     content_band,
     crop_content_height,

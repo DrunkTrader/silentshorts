@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import pytest
 
-import frame_sampler
+from silentshorts.layouts import frame_sampler
 
 N_FRAMES = 60
 

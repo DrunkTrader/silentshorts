@@ -317,7 +317,7 @@ def perform_recut(*, input_path, segments, output_dir, clean_name,
             # No reframe means no fresh layout sidecar; the captions would fall
             # back to the bottom on a stacked clip. Carry the input's layout
             # ranges through the cut instead (empty when the input has none).
-            import layout_ranges
+            from silentshorts.layouts import layout_ranges
             layout_ranges.write(out_path, [
                 (r["start"], r["end"], r["layout"], r.get("content"), r.get("seam"))
                 for r in layout_ranges.remap(layout_ranges.read(input_path), segments)])

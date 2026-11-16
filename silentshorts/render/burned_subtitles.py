@@ -111,7 +111,7 @@ def detect(video_path, frames=None):
         from pydantic import BaseModel
 
         import gemini_worker
-        import layout_picker
+        from silentshorts.layouts import layout_picker
 
         class FrameSubtitle(BaseModel):
             frame: int

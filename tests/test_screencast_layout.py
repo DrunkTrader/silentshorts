@@ -1,5 +1,5 @@
-import screencast_layout
-from screencast_layout import (
+from silentshorts.layouts import screencast_layout
+from silentshorts.layouts.screencast_layout import (
     content_side,
     overlapping_width,
     screencast_filtergraph,

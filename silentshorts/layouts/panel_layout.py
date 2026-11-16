@@ -24,7 +24,7 @@ import os
 
 import numpy as np
 
-import split_layout
+from silentshorts.layouts import split_layout
 
 ENABLED = os.environ.get("PANEL_LAYOUT", "0") == "1"
 

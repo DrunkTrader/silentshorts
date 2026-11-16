@@ -1,5 +1,5 @@
-import split_layout
-from split_layout import (
+from silentshorts.layouts import split_layout
+from silentshorts.layouts.split_layout import (
     analyze_scene,
     split_filtergraph,
     split_geometry,

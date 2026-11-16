@@ -9,7 +9,7 @@ import httpx
 import pytest
 
 app_module = pytest.importorskip("app")
-import slot_library  # noqa: E402
+from silentshorts.layouts import slot_library  # noqa: E402
 from test_audio_first import YT, fake_ydl  # noqa: E402,F401  (fixture)
 from ydl_fakes import FakeYDL  # noqa: E402
 

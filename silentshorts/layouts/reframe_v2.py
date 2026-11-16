@@ -21,14 +21,14 @@ import os
 import subprocess
 import tempfile
 
-import active_speaker
+from silentshorts.layouts import active_speaker
 from silentshorts.render import gpu_decode
 from silentshorts.render import gpu_render
-import camera_inset
+from silentshorts.layouts import camera_inset
 from silentshorts.render import punch_in
-import screencast_layout
-import layout_ranges
-import split_layout
+from silentshorts.layouts import screencast_layout
+from silentshorts.layouts import layout_ranges
+from silentshorts.layouts import split_layout
 from silentshorts.render.ffmpeg_utils import (video_encode_args, blurred_backdrop, escape_filter_value,
                           QUALITY_FAST, METADATA_SCRUB)
 

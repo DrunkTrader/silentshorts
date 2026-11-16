@@ -2,7 +2,7 @@
 import pytest
 
 from silentshorts.render import burned_subtitles
-import layout_picker
+from silentshorts.layouts import layout_picker
 import range_ingest
 
 PIECES = [{"file": f"T.piece_{i}.mp4", "start": 100.0 * i, "end": 100.0 * i + 30 + i}
@@ -98,7 +98,7 @@ def test_picker_failure_does_not_stop_the_job(monkeypatch):
 
 def test_apply_never_turns_an_explicit_choice_off(monkeypatch):
     monkeypatch.setattr(layout_picker, "ENABLED", True)
-    import split_layout
+    from silentshorts.layouts import split_layout
     monkeypatch.setattr(split_layout, "ENABLED", True)
     layout_picker.apply("none")
     assert split_layout.ENABLED is True

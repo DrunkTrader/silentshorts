@@ -8,9 +8,9 @@ import httpx
 import pytest
 
 app_module = pytest.importorskip("app")
-import layout_ranges  # noqa: E402
-import slot_library  # noqa: E402
-import slot_split  # noqa: E402
+from silentshorts.layouts import layout_ranges  # noqa: E402
+from silentshorts.layouts import slot_library  # noqa: E402
+from silentshorts.layouts import slot_split  # noqa: E402
 
 JOB_ID = "5a1f0c3e-0000-4000-8000-000000000001"
 TRANSCRIPT = {"language": "en", "segments": [

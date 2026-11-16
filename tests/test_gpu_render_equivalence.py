@@ -56,10 +56,10 @@ def _ssim(a, b):
 
 
 def _graphs():
-    import reframe_v2
-    import screencast_layout
-    import split_layout
-    import camera_inset
+    from silentshorts.layouts import reframe_v2
+    from silentshorts.layouts import screencast_layout
+    from silentshorts.layouts import split_layout
+    from silentshorts.layouts import camera_inset
     return {
         "general": reframe_v2.general_filtergraph(OW, OH, orig_w=W, orig_h=H),
         "wide": reframe_v2.general_filtergraph(
@@ -93,7 +93,7 @@ def _track_graph(tmp_path, lines, first):
 
 def test_track_matches_ffmpeg(source, tmp_path):
     import math
-    import reframe_v2
+    from silentshorts.layouts import reframe_v2
     n = int(DUR * FPS)
     xs = [int(656 + 500 * math.sin(i / 20)) for i in range(n)]
     boxes = [(608, 1080, x, 0) for x in xs]

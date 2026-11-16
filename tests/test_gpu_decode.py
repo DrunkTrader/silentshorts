@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from silentshorts.render import gpu_decode
-import reframe_v2
+from silentshorts.layouts import reframe_v2
 
 
 # --- command rewrites -------------------------------------------------------
@@ -280,7 +280,7 @@ def test_decoded_count_is_tied_to_the_exact_file(tmp_path):
 
 
 def test_sampler_uses_read_at_when_the_card_is_not_usable(monkeypatch):
-    import frame_sampler
+    from silentshorts.layouts import frame_sampler
 
     monkeypatch.setattr(gpu_decode, "usable", lambda path, render=False: False)
     monkeypatch.setattr(frame_sampler, "read_at",

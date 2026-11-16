@@ -63,7 +63,7 @@ def probe_pieces(output_dir, pieces, aspect, fits, dims, captions_on, skip_analy
     run once on the pieces. A vertical first piece skips both, as the
     whole-source path does. Returns the subtitle band or None."""
     from silentshorts.render import burned_subtitles
-    import layout_picker
+    from silentshorts.layouts import layout_picker
 
     captions_on = captions_on and not skip_analysis
     paths = [os.path.join(output_dir, p["file"]) for p in pieces]

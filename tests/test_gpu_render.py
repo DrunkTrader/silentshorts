@@ -4,11 +4,11 @@ import subprocess
 
 import pytest
 
-import camera_inset
+from silentshorts.layouts import camera_inset
 from silentshorts.render import gpu_render
-import reframe_v2
-import screencast_layout
-import split_layout
+from silentshorts.layouts import reframe_v2
+from silentshorts.layouts import screencast_layout
+from silentshorts.layouts import split_layout
 
 W, H, OW, OH = 1920, 1080, 1080, 1920
 
