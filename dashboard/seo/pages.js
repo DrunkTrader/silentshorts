@@ -111,11 +111,6 @@ that runs every hour costs what your machine costs. Hosted on ${esc(CLOUD.name)}
 ${FREE_CLOUD}, then flat plans from $${STARTER.monthly.price}/month
 (${STARTER.monthly.minutes} minutes) to $${PRO.monthly.price}/month
 (${PRO.monthly.minutes} minutes), or $${PRO.yearly.price}/month billed yearly.</p>`,
-  n8n: () => `<p>The workflow itself is free, and so is the SilentShorts it calls if you
-self-host it under MIT with your own keys (no watermark, no cap). Pointed at
-${esc(CLOUD.name)} instead, it runs on ${FREE_CLOUD}, then on a plan from
-$${STARTER.monthly.price}/month; billed yearly the entry plan is
-$${STARTER.yearly.price}/month.</p>`,
   mcp: () => `<p>The MCP server ships in both editions. Self-hosted it is free and open
 source (MIT, your own keys, no watermark, no cap). On ${esc(CLOUD.name)} an agent
 spends the same minutes a person would: ${FREE_CLOUD}, then plans from
@@ -1309,9 +1304,7 @@ deliveries.</p>
 POSTs to <code>/api/process</code>, then a Webhook trigger that receives the
 completion payload and fans out to whatever comes next, posting to socials,
 dropping links in Slack, logging to a sheet. The two-step shape above is the whole integration, which is why generic
-nodes cover it. There is now also an importable
-<a href="/n8n-youtube-shorts-automation">n8n workflow</a> that wires the whole
-loop, including channel watching, Telegram approval and scheduled publishing.</p>
+nodes cover it.</p>
 
 <h2>A weekly pipeline in one cron line</h2>
 <p>Because the API is one POST, scheduling is whatever scheduler you already
@@ -1345,7 +1338,7 @@ ${faqBlock([
   },
   {
     q: 'Is there an n8n integration for SilentShorts?',
-    a: 'Yes: an importable workflow at /n8n-youtube-shorts-automation watches a YouTube channel, clips each video, sends the clips to Telegram for approval and schedules the approved ones to your socials. Nothing forces you to use it, though, since the integration is just an HTTP Request node posting to /api/process plus a Webhook trigger.',
+    a: 'No dedicated node is needed: the integration is an HTTP Request node posting to /api/process plus a Webhook trigger that receives the signed completion payload.',
   },
   {
     q: 'Do automated API calls cost more than using the dashboard?',
@@ -1366,147 +1359,6 @@ ${sources([
     {
       q: 'Do automated API calls cost more than using the dashboard?',
       a: 'No. API and MCP calls draw from the same minute balance with no per-call pricing; the self-hosted edition has no meter at all.',
-    },
-  ],
-})
-
-/* The n8n community's two loudest unanswered asks, checked August 2026, are
- * "is there a free/self-hostable clipper I can call from a workflow" and
- * "why is posting a video to TikTok/Instagram so painful". This page answers
- * both with a workflow that exists, and gives the Reddit/forum posts a stable
- * URL to point at that is ours rather than a raw file on GitHub. */
-const n8nTemplate = () => ({
-  path: '/n8n-youtube-shorts-automation',
-  title: 'n8n YouTube Shorts Template (Auto-Posting) | SilentShorts',
-  description:
-    'A free n8n workflow that watches your YouTube channel, clips each video into shorts, sends them to Telegram for approval and drip-publishes them automatically.',
-  h1: 'The n8n content machine: your channel clips itself, you approve from your phone',
-  breadcrumb: [{ name: 'n8n template' }],
-  published: '2026-08-21',
-  updated: '2026-08-21',
-  body: `
-<figure class="shot">
-<img src="/n8n-content-machine-workflow.png" width="950" height="750" loading="eager"
-     alt="The SilentShorts content machine open in n8n: four labelled stages, from the daily channel RSS trigger through the clipping call, the Telegram approval buttons and the weekly analytics digest.">
-<figcaption>The whole machine is one canvas: watch the channel, clip, approve from Telegram, drip-publish and measure.</figcaption>
-</figure>
-<p>This workflow runs a YouTube channel on its own without handing over the
-publish button. Once a day it reads your channel feed, clips one video into
-vertical shorts, and sends each finished clip to your Telegram with Publish and
-Skip buttons. What you approve is scheduled one post per day to the accounts you
-connected, and every Sunday it reports back what the published clips actually
-did. Two credentials, no polling loop, no TikTok or Instagram OAuth app.</p>
-
-<h2>Download the workflow</h2>
-<p>The JSON lives in the project repository, not behind an email form:</p>
-<ul>
-<li><a href="${SITE.repo}/blob/main/examples/n8n/silentshorts-content-machine.json" rel="noopener">silentshorts-content-machine.json</a> — the full four-stage machine described below.</li>
-<li><a href="${SITE.repo}/blob/main/examples/n8n/silentshorts-clip-and-notify.json" rel="noopener">silentshorts-clip-and-notify.json</a> — the minimal version: a form takes a video URL, a signed webhook returns the clips.</li>
-<li><a href="${SITE.repo}/tree/main/examples/n8n" rel="noopener">Setup notes</a> — credentials, the webhook secret, and the known limits.</li>
-</ul>
-<p>In n8n: <strong>Workflows → Import from file</strong>, then fill in your channel
-id and chat id where the sticky notes on the canvas say so.</p>
-
-<h2>What the workflow actually does</h2>
-<p>Four stages, all on one canvas:</p>
-<ol>
-<li><strong>Watch the channel.</strong> A daily schedule trigger reads
-<code>youtube.com/feeds/videos.xml?channel_id=...</code>, which needs no YouTube
-API key, and picks one video: your newest upload, or if there is nothing new,
-the next unprocessed video from your back catalogue. One video a day keeps the
-minute burn predictable, and a 402 (out of minutes) pauses the machine with a
-Telegram notice instead of failing silently.</li>
-<li><strong>Clip, then get called back.</strong> One HTTP request to
-<code>/api/process</code> carrying a <code>webhook_url</code>. When the job
-ends, SilentShorts POSTs once with the finished clips and durable download links.
-There is no Wait node anywhere in the workflow.</li>
-<li><strong>Approve from your phone.</strong> Each 9:16 clip arrives in Telegram
-as a video message with Publish and Skip buttons. A human approves every post,
-which is also what separates this from the fully automated pipelines that
-YouTube's inauthentic-content policy targets.</li>
-<li><strong>Drip-publish and measure.</strong> Approved clips take the next free
-daily slot and post to the accounts you connected in SilentShorts. Every Sunday
-the workflow reads back the analytics of what it published and sends you
-impressions, per-platform split and your best post.</li>
-</ol>
-
-<h2>Why posting does not need TikTok or Instagram credentials</h2>
-<p>The usual wall in an n8n video workflow is the publishing half: TikTok
-requires an audited app to post publicly, and the Instagram Graph API refuses
-anything that is not a public static URL, which is why Google Drive links fail
-there. This workflow sidesteps both by posting through
-<code>POST /api/social/post</code> against the networks you connected once in
-your SilentShorts account. The workflow itself holds no social credentials, and
-the clip file is already on durable storage, so the public-URL requirement is
-satisfied before Instagram ever sees it.</p>
-
-<h2>Scheduling that does not double-book</h2>
-<p>Approving two clips seconds apart used to be enough to publish them at the
-same minute: each execution read the same in-memory counter before either wrote
-back. The workflow now asks the server for the queue it actually holds
-(<code>GET /api/social/scheduled</code>) and picks the first free slot from it,
-which is shared state and cannot race with itself that way. The same endpoint,
-plus <code>DELETE /api/social/scheduled/{job_id}</code>, is how you inspect or
-cancel a post before it goes out.</p>
-
-<h2>What it costs to run</h2>
-${pricingParagraph('n8n')}
-<p>API calls draw from the same minute balance as the dashboard: no per-call
-price, no automation surcharge, and no meter at all on the self-hosted edition.
-Telegram bots are free, and n8n runs wherever you already run it.</p>
-
-<h2>Known limits, before you find them the hard way</h2>
-<ul>
-<li>Telegram previews a video by URL up to about 20 MB; larger clips arrive as a
-link message carrying the same approval buttons.</li>
-<li>A YouTube channel RSS feed exposes only the latest 15 videos, so the
-back-catalogue drip reaches back that far and no further.</li>
-<li>The Telegram Trigger node needs your n8n to have a public https URL, because
-Telegram registers a webhook against it. A laptop-local n8n can run every other
-stage, but the approval buttons need a deployed instance or a tunnel.</li>
-<li>Workflow static data, where the machine remembers which videos it already
-processed, only persists on production executions. Test runs from the editor do
-not advance it.</li>
-</ul>
-
-<h2>Prefer an agent to a workflow?</h2>
-<p>The same account exposes an MCP server, so Claude, ChatGPT or an n8n AI Agent
-node can drive the pipeline as tools instead of fixed steps. That surface is
-documented on the <a href="/mcp">MCP server and API page</a>, and the raw REST
-loop on the <a href="/automate-shorts-api">automation page</a>.</p>
-
-${faqBlock([
-  {
-    q: 'Is there a free n8n template to turn long videos into shorts?',
-    a: 'Yes. SilentShorts publishes an MIT-licensed n8n workflow that clips a YouTube channel automatically and posts the approved clips to TikTok, Instagram and YouTube. The JSON is in the project repository with no email gate, and the clipper behind it is open source, so it can run entirely on your own hardware.',
-  },
-  {
-    q: 'How do I post a video to TikTok or Instagram from n8n?',
-    a: 'Neither platform has a native n8n node, and both have hard requirements: TikTok needs an audited app for public posts and Instagram needs a public static URL for the media. Posting through the SilentShorts API avoids both, because the accounts are connected once in your SilentShorts account and the clip already lives on durable public storage.',
-  },
-  {
-    q: 'Does the workflow poll for the clipping job to finish?',
-    a: 'No. Clipping a real video takes minutes, so the workflow passes a webhook_url with the job and SilentShorts calls it exactly once when the job reaches a terminal state. Failed jobs fire the same webhook with an error field, so the flow never hangs.',
-  },
-  {
-    q: 'Can the clips publish without me approving them?',
-    a: 'They can, by connecting the posting step directly to the webhook branch, but the template ships with the approval gate on purpose: unreviewed automated publishing is what YouTube\'s inauthentic-content policy targets, and one bad clip lands on your own audience.',
-  },
-])}
-
-${sources([
-  `Workflow JSON and setup notes in the project repository at <a href="${SITE.repo}/tree/main/examples/n8n" rel="noopener">github.com/DrunkTrader/silentshorts</a>.`,
-  'TikTok and Instagram publishing constraints checked against their developer documentation, August 2026.',
-])}
-`,
-  faq: [
-    {
-      q: 'Is there a free n8n template to turn long videos into shorts?',
-      a: 'Yes: SilentShorts ships an MIT-licensed n8n workflow that clips a YouTube channel automatically and posts approved clips to TikTok, Instagram and YouTube. The JSON is public in the repository with no email gate.',
-    },
-    {
-      q: 'How do I post a video to TikTok or Instagram from n8n?',
-      a: 'Post through the SilentShorts API: the social accounts are connected once in your SilentShorts account, so the workflow needs no TikTok app audit and no public CDN URL for the file.',
     },
   ],
 })
@@ -3488,15 +3340,14 @@ const RELATED = {
   '/gta-5-clips': ['/gta-6-clips', '/platforms/twitch', '/platforms/kick', '/podcast-to-shorts', '/how-silentshorts-works', '/auto-clip'],
   '/podcast-to-shorts': ['/youtube-to-shorts-converter', '/use-cases/sermons', '/how-silentshorts-works', '/platforms/youtube', '/auto-clip'],
   '/youtube-to-shorts-converter': ['/how-to/clip-a-youtube-video', '/platforms/youtube-shorts', '/podcast-to-shorts', '/how-silentshorts-works', '/video-aspect-ratio-converter'],
-  '/mcp': ['/automate-shorts-api', '/n8n-youtube-shorts-automation', '/youtube-automation'],
-  '/automate-shorts-api': ['/mcp', '/n8n-youtube-shorts-automation', '/auto-clip'],
-  '/n8n-youtube-shorts-automation': ['/automate-shorts-api', '/auto-clip', '/mcp'],
+  '/mcp': ['/automate-shorts-api', '/youtube-automation', '/auto-clip'],
+  '/automate-shorts-api': ['/mcp', '/youtube-automation', '/auto-clip'],
   '/alternatives/choppity': ['/alternatives', '/podcast-to-shorts', '/platforms/youtube', '/alternatives/opus-clip'],
   '/alternatives/getmunch': ['/alternatives', '/platforms', '/alternatives/sendshort', '/alternatives/vidyo-ai'],
 }
 
 /* The heading over the related links, by page type. */
-const GUIDES = new Set(['/how-silentshorts-works', '/mcp', '/automate-shorts-api', '/n8n-youtube-shorts-automation'])
+const GUIDES = new Set(['/how-silentshorts-works', '/mcp', '/automate-shorts-api'])
 const relatedTitleFor = (path) => {
   if (path === '/alternativas') return 'Comparativas relacionadas'
   if (GUIDES.has(path)) return 'Related guides'
@@ -3525,7 +3376,6 @@ export function buildPages() {
     youtubeConverter(),
     mcpAgentsPage(),
     automateShorts(),
-    n8nTemplate(),
     opusVsVizard(),
     pricingPage(),
   ].map((p) => ({
@@ -3572,7 +3422,6 @@ export function relatedFor(page, all) {
     '/youtube-to-shorts-converter': 'Paste a link, get 9:16 clips with subtitles.',
     '/mcp': 'Drive the whole pipeline from Claude, ChatGPT or n8n.',
     '/automate-shorts-api': 'One POST in, one signed webhook out, no polling.',
-    '/n8n-youtube-shorts-automation': 'The importable workflow: channel in, approved shorts out.',
     '/auto-clip': 'Every new upload on your channel clipped on its own, with the rules.',
     '/youtube-automation': 'Autopilot, n8n or the API: automate a real channel, not a content farm.',
     '/tools': 'Free transcript, metadata and 9:16 tools, no sign-up.',

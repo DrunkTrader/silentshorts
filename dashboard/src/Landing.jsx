@@ -1250,7 +1250,6 @@ export default function Landing({ onLaunchApp }) {
             <a href="/submagic-reviews" className="hover:text-ink transition-colors">submagic review</a>
             <a href="/mcp" className="hover:text-ink transition-colors">mcp server & api</a>
             <a href="/automate-shorts-api" className="hover:text-ink transition-colors">automate shorts</a>
-            <a href="/n8n-youtube-shorts-automation" className="hover:text-ink transition-colors">n8n workflow</a>
           </nav>
           <div className="border-t border-rule pt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">

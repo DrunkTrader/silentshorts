@@ -53,7 +53,7 @@ const autoClip = () => ({
   published: PUBLISHED,
   updated: PUBLISHED,
   relatedTitle: 'Related',
-  related: ['/youtube-automation', '/n8n-youtube-shorts-automation', '/how-silentshorts-works'],
+  related: ['/youtube-automation', '/automate-shorts-api', '/how-silentshorts-works'],
   cta: {
     label: 'Autopilot',
     title: 'Connect your channel once',
@@ -121,8 +121,8 @@ ${plansTable}
 <p>The free plan still includes the clip generator itself: 20 minutes a month,
 with a watermark, clipped by hand. Or self-host the
 <a href="/open-source-video-clipper">open source video clipper</a> and wire the
-same automation yourself with the
-<a href="/n8n-youtube-shorts-automation">n8n workflow</a>.</p>
+same automation yourself with
+<a href="/automate-shorts-api">the API</a>.</p>
 
 <h2>What it does not do</h2>
 <ul>
@@ -182,7 +182,7 @@ const youtubeAutomation = () => ({
   published: PUBLISHED,
   updated: PUBLISHED,
   relatedTitle: 'Related',
-  related: ['/auto-clip', '/n8n-youtube-shorts-automation', '/mcp'],
+  related: ['/auto-clip', '/automate-shorts-api', '/mcp'],
   cta: {
     label: 'Start with no code',
     title: 'Turn on Autopilot for your channel',
@@ -192,7 +192,7 @@ const youtubeAutomation = () => ({
   },
   tldr: [
     '"YouTube automation" means two different things. One is faceless channels that mass-produce videos from templates; YouTube demonetises that as inauthentic content. The other is taking the repetitive work off a real channel: cutting every long video into Shorts, writing the metadata, scheduling the posts. This page is about the second.',
-    'With SilentShorts there are three ways to automate it: Autopilot in the app (no code), the n8n template (you approve each clip from Telegram), or the REST API and MCP server for your own scripts and for agents like Claude and ChatGPT.',
+    'With SilentShorts there are two ways to automate it: Autopilot in the app (no code), or the REST API and MCP server for your own scripts, for tools like n8n, and for agents like Claude and ChatGPT.',
   ],
   body: `
 <h2>What is worth automating on a YouTube channel</h2>
@@ -209,12 +209,11 @@ content", which includes "AI-generated content made with generic or unoriginal
 templates giving the impression of mass production". Automating the chores of a
 channel you actually make is not that. Generating the channel is.</p>
 
-<h2>Three ways to automate it, from no code to full control</h2>
+<h2>Two ways to automate it, from no code to full control</h2>
 <table>
 <thead><tr><th>Route</th><th>Who it is for</th><th>You approve each post?</th><th>What you need</th></tr></thead>
 <tbody>
 <tr><td class="os">Autopilot</td><td>Creators who want it done, no setup</td><td>Your choice: autopublish on or off</td><td>A paid plan, your YouTube channel connected</td></tr>
-<tr><td class="os">n8n template</td><td>People who already run n8n</td><td>Yes, from Telegram</td><td>n8n, an SilentShorts API key, a Telegram bot</td></tr>
 <tr><td class="os">API and MCP</td><td>Developers and AI agents</td><td>Whatever your code decides</td><td>An API key, or a claude.ai / ChatGPT connector</td></tr>
 </tbody>
 </table>
@@ -236,20 +235,7 @@ job for each new upload it finds and emails you when the clips are ready. The ex
 video a day, only new videos, Shorts skipped) are on the
 <a href="/auto-clip">auto clip page</a>.</p>
 
-<h2>Route 2: the n8n template, with a human in the loop</h2>
-<figure class="shot">
-<img src="/n8n-content-machine-workflow.png" width="950" height="750" loading="lazy"
-     alt="The SilentShorts content machine workflow open in n8n, from the channel trigger to Telegram approval and weekly analytics.">
-<figcaption>The importable n8n workflow: watch the channel, clip, approve from Telegram, drip-publish, report weekly.</figcaption>
-</figure>
-<p>If you run n8n, the free <a href="/n8n-youtube-shorts-automation">n8n YouTube
-Shorts template</a> does the same job with one difference that matters: every
-clip reaches your Telegram with Publish and Skip buttons, and nothing goes out
-until you tap Publish. It reads your channel's public RSS feed, so it needs no
-YouTube API key, and a self-hosted SilentShorts works too: change the base URL in
-the workflow.</p>
-
-<h2>Route 3: the API and MCP, for your own code and for agents</h2>
+<h2>Route 2: the API and MCP, for your own code and for agents</h2>
 <p>Everything the app does is one HTTP call away. <code>POST /api/process</code>
 takes a video URL and a <code>webhook_url</code>, and SilentShorts calls you back
 once with the finished clips; the details and a working example are on
@@ -277,15 +263,15 @@ ${faqBlock([
   },
   {
     q: 'Can I automate YouTube Shorts from my long videos?',
-    a: 'Yes. SilentShorts Autopilot clips each new upload on your channel into vertical Shorts with subtitles and can schedule the best ones one a day. The n8n template and the API do the same for people who want to build their own flow.',
+    a: 'Yes. SilentShorts Autopilot clips each new upload on your channel into vertical Shorts with subtitles and can schedule the best ones one a day. The API does the same for people who want to build their own flow.',
   },
   {
     q: 'Do I need to code?',
-    a: 'No. Autopilot is a switch in the app. The n8n template needs n8n; the API and the MCP server are for developers and AI agents.',
+    a: 'No. Autopilot is a switch in the app. The API and the MCP server are for developers and AI agents.',
   },
   {
     q: 'Can an AI agent run my channel with SilentShorts?',
-    a: 'An agent such as Claude or ChatGPT can call SilentShorts over MCP to clip a video, list the clips and publish them. Whether it publishes without asking you is up to how you set it up; the n8n template keeps a human approval step on purpose.',
+    a: 'An agent such as Claude or ChatGPT can call SilentShorts over MCP to clip a video, list the clips and publish them. Whether it publishes without asking you is up to how you set it up.',
   },
 ])}
 
@@ -297,7 +283,7 @@ ${sources([
   faq: [
     { q: 'Is YouTube automation allowed?', a: 'Automating chores on a channel you create is fine. YouTube does not monetise inauthentic content: mass-produced, generic or repetitive videos, including AI-generated content from generic templates.' },
     { q: 'Can I automate YouTube Shorts from my long videos?', a: 'Yes. SilentShorts Autopilot clips each new upload into vertical Shorts with subtitles and can schedule the best ones one a day.' },
-    { q: 'Do I need to code?', a: 'No. Autopilot is a switch in the app. The n8n template needs n8n; the API and MCP server are for developers and AI agents.' },
+    { q: 'Do I need to code?', a: 'No. Autopilot is a switch in the app. The API and MCP server are for developers and AI agents.' },
   ],
 })
 

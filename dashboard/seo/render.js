@@ -442,7 +442,6 @@ const FOOTER_COLUMNS = [
     ['/open-source-video-clipper', 'Open source video clipper'],
     ['/mcp', 'MCP server and API'],
     ['/automate-shorts-api', 'Automate shorts with the API'],
-    ['/n8n-youtube-shorts-automation', 'n8n YouTube Shorts automation'],
   ]],
 ]
 

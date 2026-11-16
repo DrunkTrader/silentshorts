@@ -196,7 +196,6 @@ export const GUIDE_CHILDREN = [
   { path: '/how-to/best-time-to-post-youtube-shorts', name: 'Best time to post YouTube Shorts', blurb: 'No universal answer: find your viewers\' hours in Analytics and test them.' },
   { path: '/how-silentshorts-works', name: 'How SilentShorts works', blurb: 'The full pipeline, from the link to a captioned 9:16 clip.' },
   { path: '/self-hosted-ai-clip-maker', name: 'Self-host the clip maker', blurb: 'Docker setup, hardware, your own keys, and the real cost against credits.' },
-  { path: '/n8n-youtube-shorts-automation', name: 'Automate Shorts with n8n', blurb: 'The importable workflow: channel in, approved Shorts out.' },
   { path: '/automate-shorts-api', name: 'Automate Shorts with the API', blurb: 'One POST in, one signed webhook out, no polling.' },
   { path: '/mcp', name: 'Clip from an AI agent (MCP)', blurb: 'Drive the whole pipeline from Claude, ChatGPT or n8n.' },
 ]
@@ -221,7 +220,7 @@ ${cardGrid(children)}
 <li><strong>Need the platform specs or steps?</strong> <a href="/how-to/youtube-shorts-aspect-ratio">YouTube Shorts aspect ratio</a> and <a href="/how-to/instagram-reel-dimensions">Instagram Reel dimensions</a> give the sizes and safe zones; <a href="/how-to/make-youtube-shorts">how to make YouTube Shorts</a> and <a href="/how-to/make-a-reel-on-facebook">how to make a Reel on Facebook</a> give the steps; <a href="/how-to/best-time-to-post-youtube-shorts">the best time to post Shorts</a> shows how to find yours.</li>
 <li><strong>Want to know what happens to your video?</strong> <a href="/how-silentshorts-works">How SilentShorts works</a> walks through transcription, moment picking, reframing and captions.</li>
 <li><strong>Want it on your own machine?</strong> <a href="/self-hosted-ai-clip-maker">The self-hosting guide</a> covers Docker, hardware and keys. The code is MIT licensed.</li>
-<li><strong>Want it to run on its own?</strong> Start with <a href="/n8n-youtube-shorts-automation">the n8n workflow</a> for a channel, or <a href="/automate-shorts-api">the API</a> and <a href="/mcp">the MCP server</a> for your own code or agent.</li>
+<li><strong>Want it to run on its own?</strong> Start with <a href="/auto-clip">Autopilot</a> for a channel, or <a href="/automate-shorts-api">the API</a> and <a href="/mcp">the MCP server</a> for your own code or agent.</li>
 </ul>
 
 <h2>What it costs</h2>

@@ -263,8 +263,7 @@ ${NAV_SCRIPT}
     <a style="${S.a}" href="/alternatives/sendshort">SendShort alternative</a> &middot;
     <a style="${S.a}" href="/submagic-reviews">Submagic review</a> &middot;
     <a style="${S.a}" href="/mcp">MCP server &amp; API</a> &middot;
-    <a style="${S.a}" href="/automate-shorts-api">Automate shorts via API</a> &middot;
-    <a style="${S.a}" href="/n8n-youtube-shorts-automation">n8n template: channel on autopilot</a>
+    <a style="${S.a}" href="/automate-shorts-api">Automate shorts via API</a>
   </p>
 </div></section>
 
