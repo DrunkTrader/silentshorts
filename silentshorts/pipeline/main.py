@@ -58,7 +58,8 @@ ASPECT_RATIO = 9 / 16
 # Load the YOLO model once (Keep for backup or scene analysis if needed)
 # YOLO_MODEL_PATH lets deployments point at a pre-downloaded weights file so a
 # volume mounted over the workdir doesn't trigger a re-download at startup.
-model = YOLO(os.environ.get("YOLO_MODEL_PATH", "yolov8n.pt"))
+model = YOLO(os.environ.get("YOLO_MODEL_PATH",
+                            os.path.join(PROJECT_ROOT, "assets", "models", "yolov8n.pt")))
 
 # --- MediaPipe Setup ---
 # Use standard Face Detection (BlazeFace) for speed

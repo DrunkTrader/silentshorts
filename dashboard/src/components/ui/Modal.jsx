@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import { trapTab } from '../../lib/trapTab';
 
 /**
- * The single modal shell for the app (design.md).
+ * The single modal shell for the app (docs/design.md).
  * Plain dark overlay (no backdrop-blur), hairline paper2 panel.
  *
  * Props:

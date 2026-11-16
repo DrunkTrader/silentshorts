@@ -410,7 +410,7 @@ function App() {
   const [editingClip, setEditingClip] = useState(null);
   const [reframingClip, setReframingClip] = useState(null);
 
-  // Silent-success "saved" states for the settings key inputs (design.md: no alert popups)
+  // Silent-success "saved" states for the settings key inputs (docs/design.md: no alert popups)
   const [elevenLabsSaved, setElevenLabsSaved] = useState(false);
   const [falSaved, setFalSaved] = useState(false);
 

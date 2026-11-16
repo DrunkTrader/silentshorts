@@ -1,5 +1,5 @@
 /**
- * The single option-toggle group (design.md). Replaces every ad-hoc
+ * The single option-toggle group (docs/design.md). Replaces every ad-hoc
  * grid of toggle buttons (position/size/animation pickers, platform
  * selectors, mode switches).
  *
