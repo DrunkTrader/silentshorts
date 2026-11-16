@@ -80,6 +80,8 @@ class TestResumeScan:
         assert app_module.jobs["queued"]["status"] == "queued"
         assert keep == {"res-stale", "res-queued"}
         assert app_module._read_manifest("stale")["attempts"] == 1
+        # A manifest from before the package layout ran main.py as a script.
+        assert app_module.jobs["queued"]["cmd"] == ["python", "-m", "silentshorts.pipeline.main"]
 
     def test_a_job_we_already_hold_is_not_enqueued_twice(self, out):
         _manifest(out, "5a1f0c3e-0000-4000-8000-000000000051")

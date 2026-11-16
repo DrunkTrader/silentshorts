@@ -195,6 +195,8 @@ def test_job_source_url_skips_the_interpreter_flag():
     job = {"cmd": ["/usr/bin/python3", "-u", "main.py", "-u", "https://www.youtube.com/watch?v=x", "-o", "out"]}
     assert app._job_source_url(job) == "https://www.youtube.com/watch?v=x"
     assert app._job_source_url({"cmd": ["/usr/bin/python3", "-u", "main.py", "-i", "file.mp4"]}) is None
+    job = {"cmd": ["/usr/bin/python3", "-u", "-m", app.JOB_MODULE, "-u", "https://youtu.be/x", "-o", "out"]}
+    assert app._job_source_url(job) == "https://youtu.be/x"
 
 
 # --- daily budget ----------------------------------------------------------
