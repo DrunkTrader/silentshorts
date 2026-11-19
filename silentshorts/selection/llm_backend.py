@@ -31,6 +31,7 @@ import httpx
 from pydantic import BaseModel
 
 DEFAULT_MODEL = "llama3.1:8b"
+no_thinking: dict = {}  # model -> True once its server said it has no thinking mode
 DEFAULT_TIMEOUT = 600.0  # local models on CPU are slow; a scoring batch can take minutes
 
 
@@ -44,12 +45,30 @@ def provider() -> str:
     return "openai" if base_url() else "gemini"
 
 
-def base_url() -> str:
-    return (os.environ.get("LLM_BASE_URL") or "").strip().rstrip("/")
+def _env(name: str) -> str:
+    return (os.environ.get(name) or "").strip()
 
 
-def model_name() -> str:
-    return (os.environ.get("LLM_MODEL") or "").strip() or DEFAULT_MODEL
+def base_url(language: Optional[str] = None) -> str:
+    """The server for ``language``: ``LLM_BASE_URL_HI`` for Hindi when set."""
+    if language == "hi" and _env("LLM_BASE_URL_HI"):
+        return _env("LLM_BASE_URL_HI").rstrip("/")
+    return _env("LLM_BASE_URL").rstrip("/")
+
+
+def model_name(language: Optional[str] = None) -> str:
+    """The model for ``language``: ``LLM_MODEL_HI`` for Hindi when set. This is
+    the one place the per-language choice is made; the callers pass the result
+    on as ``model=`` and ``generate_json`` finds the matching server from it."""
+    if language == "hi" and _env("LLM_MODEL_HI"):
+        return _env("LLM_MODEL_HI")
+    return _env("LLM_MODEL") or DEFAULT_MODEL
+
+
+def _base_for_model(model: str) -> str:
+    # The Hindi model may live on another server (LLM_BASE_URL_HI).
+    hi = _env("LLM_MODEL_HI")
+    return base_url("hi") if hi and model == hi else base_url()
 
 
 def active() -> bool:
@@ -152,8 +171,8 @@ def generate_json(prompt: str, schema: Type[BaseModel], model: Optional[str] = N
     """
     from silentshorts.selection import gemini_worker  # local import: keeps this module free of the google SDK
 
-    url = f"{base_url()}/chat/completions"
     model = model or model_name()
+    url = f"{_base_for_model(model)}/chat/completions"
     messages = [
         {"role": "system", "content": "You answer with a single JSON object and nothing else."},
         {"role": "user", "content": prompt},
@@ -165,16 +184,26 @@ def generate_json(prompt: str, schema: Type[BaseModel], model: Optional[str] = N
             if fmt is not None:
                 body["response_format"] = fmt
             effort = _reasoning_effort()
-            if effort:
+            if effort and not no_thinking.get(model):
                 body["reasoning_effort"] = effort
-            if body["stream"]:
-                with client.stream("POST", url, json=body, headers=_headers()) as resp:
-                    if resp.status_code >= 400:
-                        resp.read()
-                    else:
-                        data = _collect_stream(resp)
-            else:
-                resp = client.post(url, json=body, headers=_headers())
+            for _attempt in (1, 2):
+                if body["stream"]:
+                    with client.stream("POST", url, json=body, headers=_headers()) as resp:
+                        if resp.status_code >= 400:
+                            resp.read()
+                        else:
+                            data = _collect_stream(resp)
+                else:
+                    resp = client.post(url, json=body, headers=_headers())
+                # Ollama 400s a reasoning_effort other than "none" on a model with
+                # no thinking mode (gemma3): the model is simply not a thinker,
+                # so ask again without the field.
+                if (resp.status_code == 400 and "reasoning_effort" in body
+                        and "support thinking" in resp.text.lower()):
+                    no_thinking[model] = True
+                    del body["reasoning_effort"]
+                    continue
+                break
             if fmt is not None and _is_format_rejection(resp):
                 # The server does not know this response_format flavour; the
                 # next loop iteration asks for a looser one.

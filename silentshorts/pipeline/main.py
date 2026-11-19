@@ -28,7 +28,8 @@ from silentshorts.render import gpu_decode
 from silentshorts.selection import gemini_worker
 from silentshorts.selection import hook_grounding
 from silentshorts.layouts import layout_picker
-from silentshorts.selection import llm_backend
+from silentshorts.selection import llm_backend, language_notes
+from silentshorts.render import hinglish
 from silentshorts.selection import twitch_signals
 from silentshorts.selection import heatmap_signals
 from silentshorts.selection import silent_copy
@@ -1406,6 +1407,8 @@ def auto_caption_clip(clip_path, transcript, clip_start, clip_end, split_ranges=
     try:
         from silentshorts.render import subtitles as _subs
         style = _subs.auto_caption_style(os.environ.get("AUTO_CAPTION_PRESET"))
+        # Hindi, Hinglish script: Roman words, same timings (the saved transcript stays Devanagari).
+        transcript = hinglish.for_captions(transcript, os.environ.get("HINDI_SCRIPT"))
         output_dir = os.path.dirname(clip_path)
         stem = os.path.basename(clip_path)
         generation_id = int(time.time())
@@ -2193,11 +2196,13 @@ def get_viral_clips(transcript_result, video_duration, viewer_clips=None, replay
     text-only call. Without it only speech windows exist, as before.
     """
     language = str(transcript_result.get('language') or 'unknown')
+    script = os.environ.get("HINDI_SCRIPT", hinglish.HINGLISH)
     if llm_backend.active():
         # Self-hosted text model: no Google key needed for this stage.
         client = None
-        model_name = llm_backend.model_name()
-        print(f"\U0001f916  Analyzing with local LLM at {llm_backend.base_url()} (2-pass: score → detail)...")
+        # The model, and server, for the transcript's language (LLM_MODEL_HI for Hindi).
+        model_name = llm_backend.model_name(language)
+        print(f"\U0001f916  Analyzing with local LLM at {llm_backend.base_url(language)} (2-pass: score → detail)...")
     else:
         print("\U0001f916  Analyzing with Gemini (2-pass: score → detail)...")
         api_key = os.getenv("GEMINI_API_KEY")
@@ -2270,9 +2275,9 @@ def get_viral_clips(transcript_result, video_duration, viewer_clips=None, replay
             return build_window_payload(ws, heat, replay)
 
         def _score_prompt(ws):
-            return gemini_worker.SCORE_PROMPT_TEMPLATE.format(
+            return language_notes.add(gemini_worker.SCORE_PROMPT_TEMPLATE.format(
                 video_duration=video_duration, language=language,
-                windows_json=json.dumps(_payload(ws), ensure_ascii=False))
+                windows_json=json.dumps(_payload(ws), ensure_ascii=False)), language, script)
 
         for batch in score_batches(windows, SCORE_BATCH):
             scored.extend(_run_stage_split(
@@ -2323,11 +2328,12 @@ def get_viral_clips(transcript_result, video_duration, viewer_clips=None, replay
             # A split batch keeps the full clip-count band: a short list can
             # still hold the best clips, and the model returns fewer anyway.
             def build(ws):
-                return gemini_worker.DETAIL_PROMPT_TEMPLATE.format(
+                return language_notes.add(gemini_worker.DETAIL_PROMPT_TEMPLATE.format(
                     video_duration=video_duration, language=language,
                     min_clips=lo, max_clips=hi,
                     min_secs=min_secs, max_secs=max_secs,
-                    windows_json=json.dumps(_payload(ws), ensure_ascii=False))
+                    windows_json=json.dumps(_payload(ws), ensure_ascii=False)),
+                    language, script, copy=True)
             return build
 
         # Neighbouring shortlisted windows become one detail window, so a moment
@@ -2440,9 +2446,14 @@ def get_viral_clips(transcript_result, video_duration, viewer_clips=None, replay
         silent_clips = [s for s in shorts if s.get("kind") == "nonspeech"]
         if silent_clips:
             costs.extend(silent_copy.fill_silent_copy(
-                silent_clips, lambda p, sch: _run_gemini_stage(client, model_name, p, sch),
+                silent_clips, lambda p, sch: _run_gemini_stage(
+                    client, model_name, language_notes.add(p, language, script, copy=True), sch),
                 silent.get("title"), silent.get("chapters"), transcript_result,
                 language if language not in ("none", "unknown") else "the language of VIDEO_TITLE"))
+
+        fixed = language_notes.finalize_copy(shorts, language, script)
+        if fixed:
+            print(f"   Transliterated {fixed} Devanagari copy field(s) to Hinglish.")
 
         # Aggregate cost across both passes.
         cost_analysis = None
