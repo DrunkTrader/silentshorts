@@ -1014,7 +1014,7 @@ def test_tracking_keeps_cancel_button_then_stops_on_cancel_without_clips(rig):
     rig.routes[f"GET /api/status/{CJ}"] = lambda r: next(seq)
     run(rig.bot.track(CHAT, CJ, 7))
     edits = [json.loads(c.content) for c in rig.named("editMessageText")]
-    assert [e["text"] for e in edits] == ["Job 0123abcd: processing", "Job 0123abcd: cancelled"]
+    assert [e["text"].splitlines()[0] for e in edits] == ["Job 0123abcd: processing", "Job 0123abcd: cancelled"]
     assert kb_datas(edits[0]["reply_markup"]["inline_keyboard"]) == [f"cj:s:{CJ}"]
     assert edits[1]["reply_markup"]["inline_keyboard"] == []
     assert len(rig.named(f"GET /api/status/{CJ}")) == 3   # polling stopped
@@ -1416,3 +1416,158 @@ def test_keep_dropped_on_cancel_upload_now_and_after_the_run(tmp_path):
     assert len(keep_calls(r, "DELETE")) == 4
     press(r, f"u:{KEY}", wait=True)             # a plain upload never scheduled: no DELETE
     assert len(keep_calls(r, "DELETE")) == 4
+
+
+# --- job stages and durations ------------------------------------------------------
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+J = "06da17f5-aaaa-bbbb-cccc-ddddeeeeffff"
+# (time, line) as the API sends them in logs / log_times; the 1500 line is a late
+# download line, after scoring started: it must not move the stage back.
+RUN = [(1000, f"Job {J} queued."), (1012, "Job started by worker."), (1013, "Download attempt 1"),
+       (1100, "Audio ready ahead of the video, transcribing"), (1300, "Transcribing… 90%"),
+       (1472, "🤖 Analyzing with Gemini..."), (1500, "[download] 100% of 1.2GiB")]
+
+
+def body_of(st, run_, clips=None):
+    return {"status": st, "logs": [line for _, line in run_], "log_times": [t for t, _ in run_],
+            "result": {"clips": clips} if clips is not None else None}
+
+
+def test_stage_markers_match_the_dashboard():
+    import re
+    with open(os.path.join(REPO, "dashboard", "src", "lib", "jobStage.js")) as f:
+        js = f.read()
+    found = dict(re.findall(r"\{ stage: '(\w+)', re: /(.+?)/ \}", js))
+    assert set(found) == {"rendering", "scoring", "transcribing"}
+    assert [n for n, _ in tb.MARKERS] == ["rendering", "scoring", "transcribing"]   # same order
+    for name, rx in tb.MARKERS:
+        assert found[name].replace(r"\/", "/") == rx.pattern, name   # JS escapes "/" in a literal
+
+
+def test_stage_text_while_running_matches_the_layout():
+    b = body_of("processing", RUN)
+    head = tb.IntakeBot._head(J[:8], "processing", tb.stage_starts("processing", b["logs"])[0], b)
+    assert tb.stage_text(head, "processing", b["logs"], b["log_times"], 1657) == (
+        "Job 06da17f5: picking moments\n"
+        "✅ Queued 0:12\n"
+        "✅ Transcribing 7:40\n"
+        "⏳ Picking moments (3:05 so far)\n"
+        "· Rendering\n"
+        "Total 10:57")
+
+
+def test_stage_starts_take_the_first_line_and_never_go_back():
+    logs = [line for _, line in RUN] + ["Transcribing… 100%", "Found 3 clips!", "Clip 1 ready",
+                                        "Detected language: en"]
+    times = [t for t, _ in RUN] + [1600, 1700, 1800, 1900]
+    cur, starts = tb.stage_starts("processing", logs, times)
+    assert cur == 3 and starts == {0: None, 1: 1012, 2: 1472, 3: 1700}
+    assert tb.stage_starts("queued", logs, times) == (0, {0: None})   # the API says queued
+    assert tb.fmt_duration(59.9) == "0:59" and tb.fmt_duration(3725) == "1:02:05"
+
+
+def test_completion_shows_every_stage_and_the_total():
+    run_ = RUN + [(1800, "🔥 Found 3 clips!"), (2400, "Process finished successfully.")]
+    b = body_of("completed", run_, [{}, {}, {}])
+    text = tb.stage_text(tb.IntakeBot._head("06da17f5", "completed", 4, b), "completed",
+                         b["logs"], b["log_times"], 9999)
+    assert text.splitlines() == ["Job 06da17f5: done, 3 clips", "✅ Queued 0:12", "✅ Transcribing 7:40",
+                                 "✅ Picking moments 5:28", "✅ Rendering 10:00", "Total 23:20"]
+
+
+def test_failure_mid_scoring_marks_the_stage_and_keeps_durations():
+    b = body_of("failed", RUN + [(1600, "Process failed with exit code 1")])
+    text = tb.stage_text(tb.IntakeBot._head("06da17f5", "failed", 2, b), "failed",
+                         b["logs"], b["log_times"], 9999)
+    assert text.splitlines() == ["Job 06da17f5 failed: Process failed with exit code 1",
+                                 "✅ Queued 0:12", "✅ Transcribing 7:40", "❌ Picking moments 2:08",
+                                 "· Rendering", "Total 10:00"]
+
+
+def test_without_log_times_poll_times_stand_in_marked_approximate():
+    logs = [line for _, line in RUN]
+    for times in (None, [1000, 1012]):   # an older server, or a short list
+        text = tb.stage_text("h", "processing", logs, times, 1657, queued_at=990,
+                             seen={0: 1001, 1: 1030, 2: 1500})
+        assert text.splitlines() == ["h", "✅ Queued ~0:40", "✅ Transcribing ~7:50",
+                                     "⏳ Picking moments (~2:37 so far)", "· Rendering", "Total ~11:07"]
+    # Nothing known: no durations rather than made-up ones.
+    assert tb.stage_text("h", "processing", logs, None, 1657).splitlines() == [
+        "h", "✅ Queued", "✅ Transcribing", "⏳ Picking moments", "· Rendering"]
+
+
+class Clock:
+    def __init__(self, rig, t=1000.0):
+        self.t = t
+        rig.bot.now = lambda: datetime.fromtimestamp(self.t, timezone.utc)
+        rig.bot.sleep = self.sleep
+        self.slept = []
+
+    async def sleep(self, s):
+        self.slept.append(s)
+        self.t += s
+
+
+def serve(rig, job, bodies):
+    seq = iter(bodies)
+    rig.routes[f"GET /api/status/{job}"] = lambda r: httpx.Response(200, json=next(seq))
+
+
+def test_track_edits_on_stage_change_and_once_a_minute_with_cancel_button(rig):
+    clock = Clock(rig)
+    started = RUN[:2]   # times 1000, 1012
+    serve(rig, J, [body_of("queued", RUN[:1])]            # t=1015: no change, under 60 s: no edit
+          + [body_of("processing", started)] * 4          # 1037.5 edit; 1052.5, 1075 no; 1108.75 edit
+          + [body_of("processing", RUN)]                  # 1159.4: scoring, edited at once
+          + [body_of("completed", RUN + [(1170, "Found 1 clips")], [])])
+    run(rig.bot.track(CHAT, J, 7))
+    edits = [json.loads(c.content) for c in rig.named("editMessageText")]
+    assert clock.slept[:5] == [15.0, 22.5, 15.0, 22.5, 33.75]   # the poll backoff is kept
+    assert [e["text"].splitlines()[0] for e in edits] == [
+        "Job 06da17f5: transcribing", "Job 06da17f5: transcribing", "Job 06da17f5: picking moments",
+        "Job 06da17f5: done, 0 clips"]
+    assert "⏳ Transcribing (0:25 so far)" in edits[0]["text"]
+    assert "⏳ Transcribing (1:36 so far)" in edits[1]["text"]
+    assert all(kb_datas(e["reply_markup"]["inline_keyboard"]) == [f"cj:s:{J}"] for e in edits[:3])
+    assert edits[3]["reply_markup"]["inline_keyboard"] == []
+
+
+def test_track_never_sends_an_unchanged_text(rig, monkeypatch):
+    Clock(rig)
+    monkeypatch.setattr(tb, "stage_text", lambda head, *a, **k: head)
+    serve(rig, J, [body_of("processing", RUN[:2])] * 8 + [body_of("cancelled", RUN[:2])])
+    run(rig.bot.track(CHAT, J, 7))
+    assert [json.loads(c.content)["text"] for c in rig.named("editMessageText")] == [
+        "Job 06da17f5: transcribing", "Job 06da17f5: cancelled"]
+
+
+def test_track_cancelled_keeps_the_durations_so_far(rig):
+    Clock(rig)
+    serve(rig, J, [body_of("cancelled", RUN + [(1532, "Job cancelled by the user.")])])
+    run(rig.bot.track(CHAT, J, 7))
+    ed = last_json(rig, "editMessageText")
+    assert ed["text"].splitlines() == ["Job 06da17f5: cancelled", "✅ Queued 0:12", "✅ Transcribing 7:40",
+                                       "🛑 Picking moments 1:00", "· Rendering", "Total 8:52"]
+    assert ed["reply_markup"]["inline_keyboard"] == []
+
+
+def test_queued_at_comes_from_the_bot_when_the_server_line_is_missing(rig):
+    rig.routes["POST /api/process"] = httpx.Response(200, json={"job_id": J})
+    clock = Clock(rig, 900.0)
+    run(rig.bot.handle_update(msg("https://youtu.be/abc")))
+    press(rig, "go")
+    assert rig.bot.data["job_settings"][J]["queued_at"] == 900.0
+    assert tb.clean_settings(rig.bot.data["job_settings"][J])["priv"] == "private"
+    clock.t = 1000.0
+    serve(rig, J, [body_of("cancelled", RUN[1:3])])   # cloud view: no "queued" line
+    run(rig.bot.track(CHAT, J, 7))
+    assert last_json(rig, "editMessageText")["text"].splitlines()[1:3] == ["✅ Queued 1:52", "🛑 Transcribing 0:01"]
+
+
+def test_jobs_shows_the_stage_and_its_time(rig):
+    Clock(rig, 1657.0)
+    rig.routes["GET /api/jobs/active"] = httpx.Response(200, json={"jobs": JOBS["jobs"][:1]})
+    serve(rig, CJ, [body_of("processing", RUN)])
+    run(rig.bot.handle_update(msg("/jobs")))
+    assert last_json(rig, "sendMessage")["text"].splitlines()[1] == (
+        "1. 0123abcd picking moments (3:05 so far): Transcribing audio https://youtu.be/a")

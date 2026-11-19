@@ -92,6 +92,85 @@ QUICK = {"h": ("in 1 hour", None, None), "e": ("today 20:00", 0, 20),
          "m": ("tomorrow 09:00", 1, 9), "a": ("tomorrow 18:00", 1, 18)}
 
 
+# --- job stages -------------------------------------------------------------
+# Port of dashboard/src/lib/jobStage.js (STAGES, MARKERS); a test keeps the
+# patterns equal. Highest matching rule wins, so out-of-order lines (transcription
+# runs while the video still downloads) never move the stage backwards.
+STAGES = ("queued", "transcribing", "scoring", "rendering", "done")
+STAGE_LABELS = ("Queued", "Transcribing", "Picking moments", "Rendering", "Done")
+MARKERS = (
+    ("rendering", re.compile(
+        r"Found \d+ (?:viral )?clips|Processing Clip \d+|Clip \d+ (?:framed|ready)|Choosing (?:a|the) "
+        r"layout|CLIP_READY|ranges: \d+ pieces?|\d+/\d+ pieces downloaded|piece\(s\) missing|Using "
+        r"the clips Gemini picked")),
+    ("scoring", re.compile(
+        r"Analyzing with (?:Gemini|local LLM)|Finding the best moments|Built \d+ scoring "
+        r"window|Silent video|finding moments in the picture")),
+    ("transcribing", re.compile(
+        r"Download attempt|\[download\]|Downloading video|Video downloaded|Audio ready|Transcrib|"
+        r"Detected language|Reusing precomputed transcript|Job started")),
+)
+_QUEUED_LINE = re.compile(r"^Job \S+ queued\.$")   # app.py's first line of a new job
+
+
+def stage_starts(status, logs, times=None):
+    """(stage index, {stage index: start}) of a job. A stage starts at the server
+    time of the first line that moves the job into it; None without ``times``."""
+    times = times if isinstance(times, list) and len(times) == len(logs) else None
+    cur, starts = 0, {0: None}
+    if status != "queued":
+        for i, line in enumerate(logs):
+            for name, rx in MARKERS:
+                rank = STAGES.index(name)
+                if rank > cur and rx.search(str(line)):
+                    cur, starts[rank] = rank, times[i] if times else None
+                    break
+    return (4 if status == "completed" else cur), starts
+
+
+def fmt_duration(seconds) -> str:
+    s = max(0, int(seconds))
+    h, m = divmod(s // 60, 60)
+    return f"{h}:{m:02d}:{s % 60:02d}" if h else f"{m}:{s % 60:02d}"
+
+
+def stage_text(head, status, logs, times, now, queued_at=None, seen=None) -> str:
+    """``head``, then one line per stage with how long it took, then the total.
+
+    ``now`` is epoch seconds. Queued starts at the server's "Job … queued." line,
+    else at ``queued_at`` (the bot's submit time). Without ``log_times`` (older
+    servers) ``seen`` ({stage index: poll time}) stands in, marked "~"."""
+    seen = seen or {}
+    exact = isinstance(times, list) and len(times) == len(logs) > 0
+    cur, starts = stage_starts(status, logs, times if exact else None)
+    if not exact:
+        starts = {k: seen.get(k) for k in starts}
+    if exact and _QUEUED_LINE.match(str(logs[0])):
+        starts[0] = times[0]
+    else:
+        starts[0] = queued_at if queued_at is not None else seen.get(0)
+    end = times[-1] if exact and status in ("completed", "failed", "cancelled") else now
+    tilde = "" if exact else "~"
+    lines = [head]
+    for k, label in enumerate(STAGE_LABELS[:4]):
+        if k > cur:
+            lines.append(f"· {label}")
+            continue
+        later = [r for r in sorted(starts) if r > k]
+        stop = starts[later[0]] if later else end
+        took = (f"{tilde}{fmt_duration(stop - starts[k])}"
+                if starts.get(k) is not None and stop is not None else "")
+        if k < cur:   # passed (a stage the logs never show has no duration)
+            lines.append(f"✅ {label} {took}".rstrip())
+        else:
+            mark = {"failed": "❌", "cancelled": "🛑"}.get(status)
+            lines.append(f"{mark} {label} {took}".rstrip() if mark
+                         else f"⏳ {label} ({took} so far)" if took else f"⏳ {label}")
+    if starts[0] is not None:
+        lines.append(f"Total {tilde}{fmt_duration(end - starts[0])}")
+    return "\n".join(lines)
+
+
 def parse_offset(text) -> Optional[str]:
     """Seconds as a short string (0 <= s <= MAX_OFFSET), else None."""
     try:
@@ -871,15 +950,18 @@ class IntakeBot:
         if status != 200 or not job_id:
             reason = "SilentShorts is not reachable" if status == 0 else self._detail(body)
             return await self._say(c, chat_id, f"Could not queue it: {reason}")
-        self.data["job_settings"][job_id] = dict(settings)
+        self.data["job_settings"][job_id] = {**settings, "queued_at": self.now().timestamp()}
         self._remember(chat_id, job_id)
         mid = await self._say(c, chat_id, f"Queued job {job_id[:8]}", self.cancel_keyboard(job_id))
         self._spawn(self.track(chat_id, job_id, mid))
 
     # --- progress and delivery -----------------------------------------
     async def track(self, chat_id, job_id, msg_id, is_active: Callable[[], bool] = lambda: True):
-        """Poll the job; edit ONE message per stage change; deliver on completion."""
-        interval, last, short = 15.0, "queued", job_id[:8]
+        """Poll the job; edit ONE message with its stages and their durations (on a
+        stage change, and at most once a minute while one runs); deliver on completion."""
+        interval, key, short = 15.0, ("queued", 0), job_id[:8]
+        queued_at = (self.data["job_settings"].get(job_id) or {}).get("queued_at")
+        seen, last_text, last_edit = {}, None, self.now().timestamp()   # seen: stage -> first poll time
         async with self.client_factory() as c:
             for _ in range(2000):
                 if not is_active():
@@ -888,21 +970,28 @@ class IntakeBot:
                 status, body = await self._api(c, "GET", f"/api/status/{job_id}")
                 if status == 404:
                     return await self._edit(c, chat_id, msg_id, f"Job {short} is gone.")
-                st = body.get("status") if status == 200 else None
+                st = body.get("status") if status == 200 and isinstance(body, dict) else None
                 if st is None:
                     interval = min(60.0, interval * 1.5)
                     continue
-                if st != last and st in ("queued", "processing"):
-                    last, interval = st, 15.0
-                    msg_id = await self._edit(c, chat_id, msg_id, f"Job {short}: {st}",
-                                              self.cancel_keyboard(job_id))
-                else:
-                    interval = min(60.0, interval * 1.5)
+                now, logs = self.now().timestamp(), body.get("logs") or []
+                cur = stage_starts(st, logs)[0]
+                seen.setdefault(cur, now)
+                text = stage_text(self._head(short, st, cur, body), st, logs,
+                                  body.get("log_times"), now, queued_at, seen)
+                moved = (st, cur) != key
+                key, interval = (st, cur), 15.0 if moved else min(60.0, interval * 1.5)
+                if st in ("queued", "processing"):
+                    # Telegram refuses an edit that changes nothing.
+                    if text != last_text and (moved or now - last_edit >= 60):
+                        msg_id = await self._edit(c, chat_id, msg_id, text, self.cancel_keyboard(job_id))
+                        last_text, last_edit = text, now
+                    continue
                 if st == "cancelled":
-                    return await self._edit(c, chat_id, msg_id, f"Job {short}: cancelled")
+                    return await self._edit(c, chat_id, msg_id, text)
                 if st == "completed":
                     clips = (body.get("result") or {}).get("clips") or []
-                    await self._edit(c, chat_id, msg_id, f"Job {short}: done, {len(clips)} clips")
+                    await self._edit(c, chat_id, msg_id, text)
                     s = clean_settings(self.data["job_settings"].get(job_id))
                     for i, clip in enumerate(clips):
                         note = None
@@ -911,7 +1000,18 @@ class IntakeBot:
                         await self._deliver(c, chat_id, i, clip, job_id, note)
                     return
                 if st == "failed":
-                    return await self._edit(c, chat_id, msg_id, self._failure(short, body))
+                    return await self._edit(c, chat_id, msg_id, text)
+
+    @classmethod
+    def _head(cls, short, st, cur, body) -> str:
+        if st == "completed":
+            return f"Job {short}: done, {len((body.get('result') or {}).get('clips') or [])} clips"
+        if st == "failed":
+            return cls._failure(short, body)
+        if st == "cancelled":
+            return f"Job {short}: cancelled"
+        return f"Job {short}: " + ("processing" if st == "processing" and cur == 0
+                                   else STAGE_LABELS[cur].lower())
 
     @staticmethod
     def _failure(short, body) -> str:
@@ -1309,14 +1409,26 @@ class IntakeBot:
             if st == "queued":
                 what = f"queued, #{j['position']} in line" if j.get("position") else "queued"
             else:
+                what = await self._stage_now(c, jid)
                 stage = str(j.get("stage") or "").strip()
                 # Self-host logs are raw: a line with a path is not shown (as in _failure).
-                what = f"processing: {stage[:120]}" if stage and "/" not in stage and "\\" not in stage \
-                    else "processing"
+                if stage and "/" not in stage and "\\" not in stage:
+                    what += f": {stage[:120]}"
             src = f" {str(j.get('source'))[:80]}" if j.get("source") else ""
             lines.append(f"{n + 1}. {jid[:8]} {what}{src}")
         markup = [[_btn(f"🛑 Cancel {j['job_id'][:8]}", f"cj:l:{j['job_id']}")] for j in rows]
         return "Active jobs:\n" + "\n".join(lines), markup
+
+    async def _stage_now(self, c, job_id) -> str:
+        """"picking moments (3:05 so far)" from the job's status, else "processing"."""
+        status, body = await self._api(c, "GET", f"/api/status/{job_id}")
+        body = body if status == 200 and isinstance(body, dict) else {}
+        cur, starts = stage_starts("processing", body.get("logs") or [], body.get("log_times"))
+        if not cur:
+            return "processing"
+        since = starts[cur]
+        took = f" ({fmt_duration(self.now().timestamp() - since)} so far)" if since is not None else ""
+        return STAGE_LABELS[cur].lower() + took
 
     async def _jobs(self, c, chat_id, rest):
         text, markup = await self._jobs_view(c)

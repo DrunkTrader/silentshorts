@@ -31,14 +31,16 @@ This is separate from the admin-alert bot (`TELEGRAM_BOT_TOKEN`,
 - Send a link or a video file (up to 20 MB, the Bot API limit for downloads;
   for bigger videos send a link): the bot answers with a settings panel, one
   message it edits in place. Nothing is queued until you press Start.
-- After Start it replies "Queued job <id>", then edits that one message as the
-  job moves from queued to processing to done, then sends each clip.
+- After Start it replies "Queued job <id>", then edits that one message with
+  the job's stages and how long each took (see Job progress below), then sends
+  each clip.
 - While the job is queued or processing that message has a 🛑 Cancel job
   button. It asks first (Yes, cancel / No), then calls
   `POST /api/jobs/<id>/cancel` and the message turns to "cancelled". A
   cancelled job is no longer polled and no clips are sent.
 - `/jobs` lists the queued jobs (with their place in line) and the running ones
-  (with the current stage, unless that log line holds a path), each with a 🛑
+  (with their stage and its time so far, then the last log line unless it holds
+  a path), each with a 🛑
   button and the same confirmation; the list is redrawn after a cancel. It
   lists every active job of this server, dashboard ones included.
 - `/schedule <job> <clip#> <platforms> <YYYY-MM-DD HH:MM>`: schedule a clip
@@ -57,6 +59,30 @@ This is separate from the admin-alert bot (`TELEGRAM_BOT_TOKEN`,
   a video file with the caption `/save <name>` to add it (name rules as for
   presets).
 - `/help` shows the commands.
+
+## Job progress
+
+The job message reads like this, edited when the stage changes and at most once
+a minute while one runs (never with an unchanged text):
+
+```
+Job 06da17f5: picking moments
+✅ Queued 0:12
+✅ Transcribing 7:40
+⏳ Picking moments (3:05 so far)
+· Rendering
+Total 10:57
+```
+
+Stages follow the dashboard's rules (`dashboard/src/lib/jobStage.js`, kept in
+sync by a test): Transcribing covers download and speech recognition, Picking
+moments is scoring. A stage starts at the server time (`log_times` of
+`/api/status`) of the first log line that moves the job into it, and never
+moves back. Queued starts at the server's "Job … queued." line, else at the
+time the bot submitted the job (`queued_at` in the state file). On a server
+without `log_times` the bot's poll times stand in and durations show `~`.
+Done marks every stage ✅ and gives the total; a failed job marks its stage ❌,
+a cancelled one 🛑, both keeping the durations so far.
 
 ## Settings panel
 
@@ -199,7 +225,7 @@ atomically:
   "default_preset": {"<chat>": "<name>"},
   "awaiting": {"<chat>": {"kind": "name" | "overwrite" | "title" | "when"
                           | "split_video" | "split_link" | "split_offset", ...}},
-  "job_settings": {"<job id>": {settings}},          # last 200
+  "job_settings": {"<job id>": {settings, "queued_at"}},  # last 200; queued_at: epoch s
   "clips": {"<job id>:<index>": {"chat", "msg", "kind", "i", "title", "link",
                                  "state", "at", "late", "youtube_url", "drive_link",
                                  "error", "keep"}}  # last 500 (scheduled ones are never dropped)
