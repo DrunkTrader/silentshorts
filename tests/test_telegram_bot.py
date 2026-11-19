@@ -121,7 +121,8 @@ def test_url_message_opens_panel_and_start_queues_job(rig):
     body = form(rig.named("POST /api/process")[0])
     assert body == {"url": "https://youtu.be/abc", "acknowledged": "true", "output_format": "vertical",
                     "layouts": "auto", "clip_min_seconds": "30", "clip_max_seconds": "60",
-                    "captions": "default", "auto_hook": "true", "auto_hook_style": "pill"}
+                    "captions": "default", "auto_hook": "true", "auto_hook_style": "pill",
+                    "language": "auto", "hindi_script": "hinglish"}
     assert "Queued job abcdef12" in rig.texts()[-1]
     assert rig.bot.jobs[str(CHAT)] == ["abcdef12-3456"]
     assert rig.bot.data["job_settings"]["abcdef12-3456"]["priv"] == "private"
@@ -132,12 +133,32 @@ def test_start_sends_exactly_the_chosen_fields(rig):
     rig.routes["POST /api/process"] = httpx.Response(200, json={"job_id": "j1"})
     run(rig.bot.handle_update(msg("https://youtu.be/abc")))
     press(rig, "s:cap:off", "s:lay:split", "s:fmt:square", "s:hook:off", "s:n:5",
-          "s:len:60-90", "s:priv:public", "go")
+          "s:len:60-90", "s:lng:hi", "s:hs:devanagari", "s:priv:public", "go")
     assert form(rig.named("POST /api/process")[0]) == {
         "url": "https://youtu.be/abc", "acknowledged": "true", "output_format": "square",
         "layouts": "split", "clip_min_seconds": "60", "clip_max_seconds": "90",
-        "captions": "false", "auto_hook": "false", "target_clips": "5"}
+        "captions": "false", "auto_hook": "false", "target_clips": "5",
+        "language": "hi", "hindi_script": "devanagari"}
     assert rig.bot.data["job_settings"]["j1"]["priv"] == "public"
+
+
+def test_language_buttons_and_old_presets(rig):
+    run(rig.bot.handle_update(msg("https://youtu.be/abc")))
+    panel = last_json(rig, "sendMessage")
+    assert "Language: auto" in panel["text"] and "Hindi text: hinglish" in panel["text"]
+    press(rig, "m:lng")
+    labels = [b["text"] for row in last_json(rig, "editMessageReplyMarkup")["reply_markup"]["inline_keyboard"]
+              for b in row]
+    assert "✓ auto" in labels and "English" in labels and "Hindi" in labels
+    press(rig, "s:lng:hi")
+    assert "Language: Hindi" in last_json(rig, "editMessageText")["text"]
+    press(rig, "s:lng:fr", "s:hs:latin")  # not offered: ignored
+    s = rig.bot.data["panels"][str(CHAT)]["7"]["s"]
+    assert s["lng"] == "hi" and s["hs"] == "hinglish"
+    # a preset saved before these settings existed loads with their defaults
+    old = {k: v for k, v in tb.DEFAULTS.items() if k not in ("lng", "hs")}
+    assert tb.clean_settings(old)["lng"] == "auto" and tb.clean_settings(old)["hs"] == "hinglish"
+    assert tb.clean_settings({"lng": "hi", "hs": "devanagari"})["hs"] == "devanagari"
 
 
 def test_button_toggle_edits_panel_in_place(rig):

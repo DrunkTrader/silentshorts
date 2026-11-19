@@ -64,6 +64,8 @@ OPTIONS = {
     "hook": ("Hook", ("off", *HOOK_STYLES)),
     "n": ("Clips", ("auto", "3", "5", "8", "10")),
     "len": ("Length", ("30-60", "15-30", "30-90", "60-90")),
+    "lng": ("Language", ("auto", "en", "hi")),                    # /api/process language
+    "hs": ("Hindi text", ("hinglish", "devanagari")),              # /api/process hindi_script
     "priv": ("YouTube privacy", ("private", "unlisted", "public")),
 }
 # Split screen (spl): the clip and an extra video from the library, stacked by
@@ -75,7 +77,7 @@ SPLIT_OPTIONS = {
     "off": ("Start offset", ("0", "10", "30", "60")),  # or typed seconds
 }
 DEFAULTS = {"cap": "default", "lay": "auto", "fmt": "vertical", "hook": "pill",
-            "n": "auto", "len": "30-60", "priv": "private",
+            "n": "auto", "len": "30-60", "lng": "auto", "hs": "hinglish", "priv": "private",
             "spl": "off", "pos": "bottom", "rat": "50/50", "aud": "source", "off": "0", "src": None}
 NAME_BYTES = 32   # preset names ride in callback_data ("l:<name>", 64-byte cap)
 TITLE_CHARS = 100
@@ -133,7 +135,8 @@ def form_fields(s) -> dict:
     f = {"output_format": s["fmt"], "layouts": s["lay"],
          "clip_min_seconds": lo, "clip_max_seconds": hi,
          "captions": "false" if s["cap"] == "off" else s["cap"],
-         "auto_hook": "false" if s["hook"] == "off" else "true"}
+         "auto_hook": "false" if s["hook"] == "off" else "true",
+         "language": s["lng"], "hindi_script": s["hs"]}
     if s["hook"] != "off":
         f["auto_hook_style"] = s["hook"]
     if s["n"] != "auto":
@@ -148,7 +151,7 @@ def preset_name(text: str) -> str:
 
 
 def _label(v) -> str:
-    return {"none": "plain crop"}.get(v, str(v).replace("_", " "))
+    return {"none": "plain crop", "en": "English", "hi": "Hindi"}.get(v, str(v).replace("_", " "))
 
 
 def _unlink(path):

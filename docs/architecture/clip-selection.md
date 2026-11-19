@@ -127,6 +127,8 @@ these thresholds and the stretch sizes; if the behaviour changes, change
 
 ## Local LLM for the moment picker (`silentshorts/selection/llm_backend.py`)
 
+Hindi transcripts have their own model, see `hindi.md`.
+
 `LLM_BASE_URL` (+ `LLM_MODEL`, `LLM_API_KEY`) routes the two transcript passes of
 `get_viral_clips` to any OpenAI-compatible `/chat/completions` instead of Gemini;
 the response is validated with the same pydantic schemas Gemini enforces

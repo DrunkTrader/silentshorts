@@ -71,6 +71,8 @@ ticked); picking one edits the panel and goes back.
 | Hook | pill, off, or any `hooks.HOOK_STYLES` style | `auto_hook` + `auto_hook_style` |
 | Clips | auto, 3, 5, 8, 10 | `target_clips` (left out for auto) |
 | Length | 30-60, 15-30, 30-90, 60-90 s | `clip_min_seconds` / `clip_max_seconds` |
+| Language | auto, English, Hindi | `language` (`auto`, `en`, `hi`) |
+| Hindi text | hinglish, devanagari | `hindi_script` (captions and copy of Hindi jobs; see `architecture/hindi.md`) |
 | YouTube privacy | private, unlisted, public | not sent; used by the upload below |
 | Split screen | off, on | not sent; applied after the job (below) |
 
@@ -209,7 +211,7 @@ A clip's `state` is `""`, `scheduled`, `uploading`, `uploaded`, `failed` or
 `late` is the "ran late" note; `keep` is set while the bot holds a cleanup
 keep for the clip.
 
-`settings` is `{"cap", "lay", "fmt", "hook", "n", "len", "priv", "spl", "pos",
+`settings` is `{"cap", "lay", "fmt", "hook", "n", "len", "lng", "hs", "priv", "spl", "pos",
 "rat", "aud", "off", "src"}`; `src` is `{"id", "name"}` of a library item or
 null.
 
