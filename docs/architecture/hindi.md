@@ -13,6 +13,8 @@ Job fields on `/api/process` (also JSON and the Telegram panel's Language / Hind
   decode), then one transcription with the language fixed. `en`/`hi` skip the detection.
 - `WHISPER_MODEL_HI` (unset by default) replaces the model when the language is `hi`, e.g.
   `collabora/faster-whisper-small-hindi` (CTranslate2, fetched by repo id on first use).
+  The model is about 465 MB and CC-BY-4.0 (attribution: Collabora, `collabora/whisper-small-hindi`
+  converted to CTranslate2); it is downloaded by faster-whisper, never bundled.
   The singleton is keyed per model and the old one is unloaded before the new one loads, so the two
   are never resident together; `release_models()` is still called after every ASR.
 - `hi` never goes through Parakeet (no Hindi). `WHISPER_VAD` is unchanged.
