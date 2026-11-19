@@ -11,9 +11,12 @@ COPY_FIELDS = ("viral_hook_text", "video_title_for_youtube_short",
 _JUDGE = "The transcript is in Hindi (Devanagari). Judge it as Hindi."
 # A 4B model ignored a bare "write in Hinglish" at the end of the prompt and answered in
 # English (measured on a real Hindi talk); with an example, and said at both ends, it complied.
+# The examples are single words or marked "never copy": full example sentences were
+# pasted verbatim into hooks by the 4B model.
 _HINGLISH = ("Write the title, hook text and descriptions in Hinglish: Hindi in Roman letters, "
-             "the way people type it on Instagram, for example \"yeh trick kaise kaam karti hai\" or "
-             "\"kya aap jaante hain?\". Not English. Do not use Devanagari.")
+             "the way people type it on Instagram. Not English. Do not use Devanagari. "
+             "Keep English words, names and acronyms in their normal English spelling "
+             "(GTA, UFO, bro, game, video), never spelled out phonetically.")
 _DEVANAGARI = ("Write the title, hook text and descriptions in Hindi, in Devanagari script, "
                "for example \"यह ट्रिक कैसे काम करती है\". Not English.")
 
