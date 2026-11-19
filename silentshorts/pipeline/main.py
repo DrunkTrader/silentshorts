@@ -2058,7 +2058,7 @@ def transcribe_video(video_path):
     # jobs failing per hour at peak). Nothing after this point transcribes.
     with host_asr_slot():
         try:
-            transcript = transcribe_media(video_path)
+            transcript = transcribe_media(video_path, os.environ.get("TRANSCRIBE_LANGUAGE", "auto"))
         finally:
             try:
                 release_models()

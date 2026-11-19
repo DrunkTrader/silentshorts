@@ -143,7 +143,7 @@ def test_transcribe_media_falls_back_on_parakeet_exception(monkeypatch):
     monkeypatch.setenv("TRANSCRIBE_BACKEND", "parakeet")
     monkeypatch.setattr(tb, "_has_audio_stream", lambda path: True)
     monkeypatch.setattr(tb, "_transcribe_with_parakeet", boom)
-    monkeypatch.setattr(tb, "_transcribe_with_whisper", lambda path: sentinel)
+    monkeypatch.setattr(tb, "_transcribe_with_whisper", lambda path, language="auto": sentinel)
     assert tb.transcribe_media("video.mp4") is sentinel
 
 
@@ -154,7 +154,7 @@ def test_transcribe_media_default_is_whisper(monkeypatch):
     monkeypatch.setattr(
         tb, "_transcribe_with_parakeet",
         lambda path: (_ for _ in ()).throw(AssertionError("should not run")))
-    monkeypatch.setattr(tb, "_transcribe_with_whisper", lambda path: sentinel)
+    monkeypatch.setattr(tb, "_transcribe_with_whisper", lambda path, language="auto": sentinel)
     assert tb.transcribe_media("video.mp4") is sentinel
 
 
@@ -277,7 +277,7 @@ def test_whisper_model_is_fetched_inside_the_gate(monkeypatch):
     monkeypatch.setattr(tb, "_ASR_GATE", _Gate())
     monkeypatch.setattr(tb, "_whisper_device", lambda: "cuda")
     monkeypatch.setattr(tb, "_get_whisper_model",
-                        lambda: (order.append("model"), (_Model(), "cuda"))[1])
+                        lambda *a: (order.append("model"), (_Model(), "cuda"))[1])
 
     tb._run_whisper_once("x.mp4")
 

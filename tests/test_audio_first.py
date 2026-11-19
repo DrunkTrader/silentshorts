@@ -113,7 +113,7 @@ def test_release_models_called_after_audio_transcription(main, monkeypatch, tmp_
     calls = []
     monkeypatch.setattr(transcribe_backends, "release_models", lambda: calls.append("release"))
     monkeypatch.setattr(transcribe_backends, "transcribe_media",
-                        lambda p: {"language": "en", "segments": []})
+                        lambda p, language="auto": {"language": "en", "segments": []})
     audio = tmp_path / "Talk.audio.m4a"
     audio.write_bytes(b"x")
     main.transcribe_video(str(audio))

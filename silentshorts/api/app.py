@@ -4103,6 +4103,8 @@ async def process_endpoint(
     max_minutes: Optional[str] = Form(None),
     source_start: Optional[str] = Form(None),
     source_end: Optional[str] = Form(None),
+    language: Optional[str] = Form(None),
+    hindi_script: Optional[str] = Form(None),
 ):
     api_key = await resolve_gemini(request)
     if not api_key and not (llm_backend.active() and not BILLING_ENABLED):
@@ -4137,6 +4139,8 @@ async def process_endpoint(
         max_minutes = body.get("max_minutes")
         source_start = body.get("source_start")
         source_end = body.get("source_end")
+        language = body.get("language")
+        hindi_script = body.get("hindi_script")
 
     # Normalize output format (auto = keep pipeline default).
     if output_format not in ("vertical", "horizontal", "square"):
@@ -4282,6 +4286,13 @@ async def process_endpoint(
         env["CLIP_MAX_SECONDS"] = str(max_secs)
     if n_clips is not None or min_secs is not None or max_secs is not None:
         print(f"[gen-controls] job={job_id} clips={n_clips} band={min_secs}-{max_secs}")
+
+    # Spoken language and, for Hindi, the script of captions and copy. Anything
+    # unknown means auto / hinglish; the job's env is the only place they live.
+    from silentshorts.pipeline.transcribe_backends import normalize_language
+    from silentshorts.render.hinglish import normalize_script
+    env["TRANSCRIBE_LANGUAGE"] = normalize_language(language)
+    env["HINDI_SCRIPT"] = normalize_script(hindi_script)
 
     # captions=false: the source already carries burned-in subtitles (or the
     # caller adds its own later), so skip the free auto-caption pass instead

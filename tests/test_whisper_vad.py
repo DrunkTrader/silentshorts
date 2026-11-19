@@ -18,8 +18,8 @@ class _Model:
 
 def _run(monkeypatch):
     model = _Model()
-    monkeypatch.setattr(tb, "_get_whisper_model", lambda: (model, "cpu"))
-    tb._transcribe_with_whisper("x.wav")
+    monkeypatch.setattr(tb, "_get_whisper_model", lambda *a: (model, "cpu"))
+    tb._transcribe_with_whisper("x.wav", "en")
     return model.kwargs
 
 

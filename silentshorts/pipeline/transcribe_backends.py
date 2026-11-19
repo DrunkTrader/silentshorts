@@ -159,14 +159,18 @@ _whisper_lock = threading.Lock()
 _whisper_force_cpu = False
 
 
-def _get_whisper_model():
-    """Process-wide WhisperModel singleton, rebuilt if the env config changes.
+def _get_whisper_model(model_size=None):
+    """Process-wide WhisperModel singleton, rebuilt if the env config or the
+    requested model changes (the Hindi model replaces the default one, they are
+    never resident together).
 
     Keeping the model resident avoids a full reload per transcription (which
     on GPU would also mean re-allocating a couple of GB of VRAM per job).
     """
     global _whisper_model, _whisper_key
     cfg = get_whisper_config()
+    if model_size:
+        cfg["model_size"] = model_size
     if _whisper_force_cpu:
         cfg["device"] = "cpu"
         cfg["compute_type"] = "int8"
@@ -174,22 +178,34 @@ def _get_whisper_model():
     with _whisper_lock:
         if _whisper_model is None or _whisper_key != key:
             from faster_whisper import WhisperModel
+            old, _whisper_model, _whisper_key = _whisper_model, None, None
+            _unload_whisper(old)
             _whisper_model = WhisperModel(key[0], device=key[1], compute_type=key[2])
             _whisper_key = key
     return _whisper_model, cfg["device"]
+
+
+def _unload_whisper(model):
+    if model is None:
+        return
+    try:
+        # ctranslate2 frees the weights on unload, not on garbage collection.
+        model.model.unload_model()
+    except Exception as e:
+        print(f"⚠️ [ASR] whisper unload failed ({type(e).__name__}: {e})")
 
 
 def _whisper_device():
     return "cpu" if _whisper_force_cpu else get_whisper_config()["device"]
 
 
-def _run_whisper_once(media_path, **params):
+def _run_whisper_once(media_path, model_size=None, **params):
     gate = _ASR_GATE if _whisper_device() != "cpu" else _NULL_GATE
     # The model is fetched inside the gate: release_models() drains the gate
     # before unloading, so a transcription can never start on a model that is
     # being dropped underneath it.
     with gate:
-        model, _device = _get_whisper_model()
+        model, _device = _get_whisper_model(model_size)
         segments, info = model.transcribe(media_path, **params)
         progress = _TranscribeProgress(getattr(info, "duration", 0))
         materialized = []
@@ -202,7 +218,7 @@ def _run_whisper_once(media_path, **params):
         return materialized, info
 
 
-def run_whisper_transcription(media_path, **params):
+def run_whisper_transcription(media_path, model_size=None, **params):
     """Transcribe and FULLY materialize the segments inside the GPU gate.
 
     faster-whisper returns a lazy generator — decoding happens while
@@ -215,7 +231,7 @@ def run_whisper_transcription(media_path, **params):
     """
     global _whisper_model, _whisper_force_cpu
     try:
-        return _run_whisper_once(media_path, **params)
+        return _run_whisper_once(media_path, model_size, **params)
     except RuntimeError as e:
         if _whisper_force_cpu or "cuda" not in str(e).lower():
             raise
@@ -223,7 +239,7 @@ def run_whisper_transcription(media_path, **params):
         _whisper_force_cpu = True
         with _whisper_lock:
             _whisper_model = None  # drop the GPU model to release its VRAM
-        return _run_whisper_once(media_path, **params)
+        return _run_whisper_once(media_path, model_size, **params)
 
 
 def whisper_params():
@@ -238,8 +254,63 @@ def whisper_params():
     return params
 
 
-def _transcribe_with_whisper(media_path):
-    segments, info = run_whisper_transcription(media_path, **whisper_params())
+LANGUAGE_CHOICES = ("auto", "en", "hi")
+DETECT_SECONDS = 30
+
+
+def normalize_language(value):
+    """The job's ``language`` field: ``en``/``hi``, anything else is ``auto``."""
+    v = str(value or "").strip().lower()
+    return v if v in LANGUAGE_CHOICES else "auto"
+
+
+def whisper_model_for(language):
+    """The model for a language: ``WHISPER_MODEL_HI`` for Hindi when set, else
+    None (the default ``WHISPER_MODEL``)."""
+    if language == "hi":
+        return (os.environ.get("WHISPER_MODEL_HI") or "").strip() or None
+    return None
+
+
+def _detect_whisper_language(media_path):
+    """Language of the first ~30 s, from the default model's detect_language
+    (one encoder pass, no decoding). Falls back to None on any failure."""
+    wav = None
+    try:
+        fd, wav = tempfile.mkstemp(suffix=".wav", prefix="asrlang_")
+        os.close(fd)
+        subprocess.run(
+            ["ffmpeg", "-y", "-loglevel", "error", "-t", str(DETECT_SECONDS), "-i", media_path,
+             "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", wav],
+            check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=300)
+        audio = _read_wav_16k(wav)
+        gate = _ASR_GATE if _whisper_device() != "cpu" else _NULL_GATE
+        with gate:
+            model, _device = _get_whisper_model()
+            lang, prob, _all = model.detect_language(audio)
+        print(f"🎙️ [ASR] detected language '{lang}' ({prob:.2f})")
+        return lang
+    except Exception as e:
+        print(f"⚠️ [ASR] language detection failed ({type(e).__name__}: {e})")
+        return None
+    finally:
+        if wav:
+            try:
+                os.remove(wav)
+            except OSError:
+                pass
+
+
+def _transcribe_with_whisper(media_path, language="auto"):
+    language = normalize_language(language)
+    detected = _detect_whisper_language(media_path) if language == "auto" else language
+    model_size = whisper_model_for(detected)
+    params = whisper_params()
+    if detected:
+        params["language"] = detected  # decided already; no second detection pass
+    if model_size:
+        print(f"🎙️ [ASR] language '{detected}': using WHISPER_MODEL_HI={model_size}")
+    segments, info = run_whisper_transcription(media_path, model_size, **params)
 
     out_segments = []
     text_parts = []
@@ -371,13 +442,7 @@ def release_models():
     finally:
         for _ in range(_ASR_SLOTS):
             _ASR_GATE.release()
-    if whisper is not None:
-        try:
-            # ctranslate2 frees the weights on unload, not on garbage
-            # collection: the Python wrapper can outlive the last reference.
-            whisper.model.unload_model()
-        except Exception as e:
-            print(f"⚠️ [ASR] whisper unload failed ({type(e).__name__}: {e})")
+    _unload_whisper(whisper)
     del whisper, parakeet
     # TransNetV2 is the other torch tenant an in-process pipeline leaves
     # behind (scene_detection keeps it as a module singleton too).
@@ -518,11 +583,12 @@ def _parakeet_transcript(results):
 _SCRIPT_RX = {
     "cyrl": re.compile("[\u0400-\u04FF]"),
     "grek": re.compile("[\u0370-\u03FF]"),
+    "deva": re.compile("[\u0900-\u097F]"),
 }
-_LANG_SCRIPT = {"ru": "cyrl", "uk": "cyrl", "bg": "cyrl", "el": "grek"}
+_LANG_SCRIPT = {"ru": "cyrl", "uk": "cyrl", "bg": "cyrl", "el": "grek", "hi": "deva"}
 # A Cyrillic-script transcript can legitimately quote Latin brand names, so
 # only scripts that cannot belong to the file's language count as drift.
-_FOREIGN_SCRIPTS = {"latn": ("cyrl", "grek"), "grek": ("cyrl",), "cyrl": ()}
+_FOREIGN_SCRIPTS = {"latn": ("cyrl", "grek"), "grek": ("cyrl",), "cyrl": (), "deva": ("cyrl", "grek")}
 _DRIFT_PAD = 0.15  # seconds of audio around a segment handed to whisper
 
 
@@ -659,8 +725,11 @@ def _has_audio_stream(media_path) -> bool:
         return True  # probe failed — don't block, let the backend try
 
 
-def transcribe_media(media_path):
-    """Transcribe with the configured backend, falling back to whisper."""
+def transcribe_media(media_path, language="auto"):
+    """Transcribe with the configured backend, falling back to whisper.
+
+    ``language``: ``auto`` detects it from the first seconds, ``en``/``hi`` force it
+    (``hi`` uses ``WHISPER_MODEL_HI`` when set and skips parakeet, which has no Hindi)."""
     # Silent videos (AI-generated clips, muted screen recordings) have no audio
     # stream; every ASR backend then crashes deep inside libav with an opaque
     # "tuple index out of range". Detect it up front and fail with a clear,
@@ -672,7 +741,7 @@ def transcribe_media(media_path):
 
     backend = os.environ.get("TRANSCRIBE_BACKEND", "whisper").strip().lower()
 
-    if backend == "parakeet":
+    if backend == "parakeet" and normalize_language(language) != "hi":
         try:
             transcript = _transcribe_with_parakeet(media_path)
             reason = _parakeet_fallback_reason(transcript)
@@ -686,4 +755,4 @@ def transcribe_media(media_path):
             print(f"⚠️ [ASR] parakeet failed ({type(e).__name__}: {e}) — "
                   f"falling back to whisper")
 
-    return _transcribe_with_whisper(media_path)
+    return _transcribe_with_whisper(media_path, language)
