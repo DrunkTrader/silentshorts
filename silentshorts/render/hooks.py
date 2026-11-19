@@ -35,6 +35,8 @@ PILL_FONT_PATH = os.path.join(FONT_DIR, "Montserrat-ExtraBold.ttf")
 HOOK_FONTS = {
     "montserrat": (PILL_FONT_PATH, 0.064),
     "anton": (os.path.join(FONT_DIR, "Anton-Regular.ttf"), 0.08),
+    # SIL OFL (fonts/NotoSansDevanagari-OFL.txt); the other three have no Devanagari glyphs.
+    "devanagari": (os.path.join(FONT_DIR, "NotoSansDevanagari-Bold.ttf"), 0.05),
     "serif": (FONT_PATH, 0.05),
 }
 
@@ -282,6 +284,8 @@ def create_hook_image(text, target_width, output_image_path="hook_overlay.png", 
     # A chosen typeface (HOOK_FONTS key) wins; otherwise the style's own
     # (pill -> Montserrat, the rest -> Noto Serif, as they always rendered).
     default_font = "montserrat" if look.get("font") == PILL_FONT_PATH else "serif"
+    if re.search("[\u0900-\u097F]", text):
+        font = "devanagari"  # whatever was chosen: its glyphs would be boxes
     font_path, size_factor = HOOK_FONTS.get(font or default_font, HOOK_FONTS[default_font])
     base_font_size = int(target_width * size_factor)
     font_size = int(base_font_size * font_scale)

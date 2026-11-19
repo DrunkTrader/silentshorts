@@ -36,6 +36,17 @@ WHISPER_TRANSCRIBE_PARAMS = {
 }
 
 
+# Anton and Montserrat have no Devanagari glyphs: a caption that carries any is
+# set in this bundled font (fonts/NotoSansDevanagari-Bold.ttf, SIL OFL).
+DEVANAGARI_FONT = "Noto Sans Devanagari"
+_DEVANAGARI_RE = re.compile("[\u0900-\u097F]")
+
+
+def font_for_text(font_name, texts):
+    """``font_name``, or the Devanagari font when any of ``texts`` has Devanagari."""
+    return DEVANAGARI_FONT if any(_DEVANAGARI_RE.search(t or "") for t in texts) else font_name
+
+
 def merge_continuation_words(words):
     """Merge faster-whisper continuation fragments into their base word.
 
@@ -419,7 +430,8 @@ def generate_ass(transcript, clip_start, clip_end, output_path,
                 return f"{{\\an5\\pos({SEAM_PLAY_RES_X / 2:g},{288 * float(frac):.1f})}}"
         return ""
 
-    safe_font = _sanitize_font_name(font_name)
+    safe_font = _sanitize_font_name(font_for_text(
+        font_name, (w["word"] for block in blocks for w in block)))
     base_opacity = _clamp_number(base_opacity, 0.05, 1.0, 1.0)
     # Dim inactive words via a fully-opaque scaled color (NOT alpha — see
     # _dim_hex_color); the active word overrides the color inline.
