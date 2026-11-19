@@ -95,7 +95,7 @@ def test_notes_only_for_hindi():
     assert language_notes.add("P", "en") == "P" and language_notes.add("P", "de", copy=True) == "P"
     judge = language_notes.add("P", "hi")
     assert "Hindi (Devanagari)" in judge and "Hinglish" not in judge
-    assert "Hinglish" in language_notes.add("P", "hi", copy=True)
+    assert language_notes.add("P", "hi", copy=True).count("Hinglish") >= 2  # said before and after the prompt
     assert "Do not use Devanagari" in language_notes.add("P", "hi", "hinglish", copy=True)
     dev = language_notes.add("P", "hi", "devanagari", copy=True)
     assert "in Devanagari script" in dev and "Hinglish" not in dev
