@@ -27,9 +27,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from starlette.background import BackgroundTask
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from silentshorts.pipeline.s3_uploader import upload_job_artifacts, list_all_clips, upload_actor_to_s3, list_actor_gallery, upload_video_to_gallery, list_video_gallery
 from silentshorts.render import recut
+from silentshorts.selection import clip_selection, language_notes, manual_cut
 from silentshorts.layouts import slot_library
 from silentshorts.layouts import slot_split
 from silentshorts.layouts import layout_ranges
@@ -5460,7 +5461,9 @@ async def rerender_clip(req: RerenderRequest, request: Request):
         return await _rerender_locked(req, request, job)
 
 
-async def _rerender_locked(req: RerenderRequest, request: Request, job):
+async def _rerender_locked(req: RerenderRequest, request: Request, job, new_clip=None):
+    """``new_clip``: render it as a new clip appended to the job (/api/clip/cut);
+    nothing is written unless the render succeeds."""
     output_dir = os.path.join(OUTPUT_DIR, req.job_id)
     json_files = glob.glob(os.path.join(output_dir, "*_metadata.json"))
     if not json_files:
@@ -5469,6 +5472,9 @@ async def _rerender_locked(req: RerenderRequest, request: Request, job):
         data = json.load(f)
 
     clips = data.get('shorts', [])
+    if new_clip is not None:
+        clips.append(new_clip)
+        req.clip_index = len(clips) - 1
     if req.clip_index < 0 or req.clip_index >= len(clips):
         raise HTTPException(status_code=404, detail="Clip not found")
     clip = clips[req.clip_index]
@@ -5599,7 +5605,10 @@ async def _rerender_locked(req: RerenderRequest, request: Request, job):
         data['shorts'] = clips
         write_json_atomic(json_files[0], data, indent=2)
         mem_clips = (job.get('result') or {}).get('clips') or []
-        if req.clip_index < len(mem_clips):
+        if new_clip is not None:
+            job['result'] = job.get('result') or {}
+            job['result']['clips'] = mem_clips + [dict(clip)]
+        elif req.clip_index < len(mem_clips):
             mem_clips[req.clip_index].update(updates)
 
         _archive_clip_edit_bg(req.job_id, req.clip_index, served_name)
@@ -5607,6 +5616,7 @@ async def _rerender_locked(req: RerenderRequest, request: Request, job):
             await _metering.commit_reservation(reservation_id)
         return {
             "success": True,
+            "clip_index": req.clip_index,
             "new_video_url": new_video_url,
             "recipe": new_recipe,
             "framing": framing,
@@ -5620,6 +5630,62 @@ async def _rerender_locked(req: RerenderRequest, request: Request, job):
             await _metering.release_reservation(reservation_id)
         print(f"❌ Rerender Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class CutRequest(BaseModel):
+    """A new clip of exactly [start, end], or of the words from_text .. to_text."""
+    job_id: str
+    start: Optional[float] = None
+    end: Optional[float] = None
+    from_text: Optional[str] = Field(None, max_length=300)
+    to_text: Optional[str] = Field(None, max_length=300)
+    reapply_captions: bool = True
+
+
+@app.post("/api/clip/cut")
+async def cut_new_clip(req: CutRequest, request: Request):
+    """Pick it yourself: a NEW clip of the range the user chose, appended to the
+    job. Rendered by the rerender source path (same guards, lock, watermark
+    and metering); 409 when that part of the source was not kept."""
+    _require_job_id(req.job_id)
+    await require_managed_entitlement(request)
+    await _ensure_job_files(req.job_id, request)
+    if req.job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    job = jobs[req.job_id]
+    await _assert_job_owner(request, job)
+    if job.get('status') != 'completed':
+        # main.py rewrites metadata.json until it exits; an appended clip would be lost.
+        raise HTTPException(status_code=409, detail="The job is not finished yet.")
+
+    lock = _rerender_locks.setdefault(req.job_id, asyncio.Lock())
+    async with lock:
+        json_files = glob.glob(os.path.join(OUTPUT_DIR, req.job_id, "*_metadata.json"))
+        if not json_files:
+            raise HTTPException(status_code=404, detail="Metadata not found")
+        with open(json_files[0], 'r') as f:
+            transcript = json.load(f).get('transcript') or {}
+        duration = _source_total_duration(req.job_id, _locate_source(req.job_id))
+        try:
+            start, end = manual_cut.resolve(transcript, duration, req.start, req.end,
+                                            req.from_text, req.to_text)
+        except manual_cut.CutError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        if _locate_source_for_range(req.job_id, start, end)[0] is None:
+            raise HTTPException(
+                status_code=409,
+                detail="That part of the video is not on the server any more (only the "
+                       "clips and a margin around them are kept). Pick a range inside them.")
+        excerpt = clip_selection.clip_excerpt(recut.transcript_words(transcript), start, end)
+        clip = {"start": start, "end": end, "manual": True, "source_window_id": "manual",
+                "excerpt": excerpt, "why": "",
+                "video_title_for_youtube_short": excerpt[:97] + ("…" if len(excerpt) > 97 else "")}
+        language_notes.finalize_copy([clip], str(transcript.get('language') or ''),
+                                     os.environ.get("HINDI_SCRIPT", "hinglish"))
+        rr = RerenderRequest(job_id=req.job_id, clip_index=0,
+                             segments=[RerenderSegment(start=start, end=end)],
+                             reapply_captions=req.reapply_captions)
+        return await _rerender_locked(rr, request, job, new_clip=clip)
 
 
 # --- Manual framing -----------------------------------------------------------

@@ -1594,3 +1594,91 @@ def test_caption_shows_why_and_confidence_and_fits_telegram(tmp_path):
 def test_caption_without_why_is_unchanged():
     assert tb.explain({"confidence": 9, "why": "  "}) == {}
     assert tb.explain({"confidence": True}) == {}
+
+
+# --- pick it yourself (/cut) -----------------------------------------------------
+CUTJOB = "c0ffee12-0000-4000-8000-000000000001"
+
+
+def test_parse_cut_ranges_and_quotes():
+    assert tb.parse_clock("75") == 75 and tb.parse_clock("1:15") == 75 and tb.parse_clock("1:02:03") == 3723
+    assert tb.parse_clock("1:15.5") == 75.5
+    for bad in ("1:75", "", "a:10", "1:2:3:4", "-5", "inf"):
+        assert tb.parse_clock(bad) is None
+    assert tb.parse_cut("1:20-2:05") == {"start": 80, "end": 125}
+    assert tb.parse_cut("80 – 125") == {"start": 80, "end": 125}
+    assert tb.parse_cut("2:05-1:20") is None
+    assert tb.parse_cut('"mera naam" .. "khatam"') == {"from_text": "mera naam", "to_text": "khatam"}
+    assert tb.parse_cut("“so here's the thing” … “that's it”") == {
+        "from_text": "so here's the thing", "to_text": "that's it"}
+    assert tb.parse_cut("hello there") is None
+
+
+def cut_rig(tmp_path, api_status=200, api_body=None):
+    r = Rig(tmp_path)
+    r.bot.jobs[str(CHAT)] = [CUTJOB]
+    r.bot.data["job_settings"][CUTJOB] = {**tb.DEFAULTS, "msg": 55}
+    new = f"/videos/{CUTJOB}/subtitled_t_clip_3.mp4"
+    r.routes["POST /api/clip/cut"] = httpx.Response(api_status, json=api_body or {
+        "success": True, "clip_index": 2, "new_video_url": new, "start": 79.7, "end": 125.3})
+    r.routes[f"GET /api/status/{CUTJOB}"] = status("completed", [
+        {"video_url": "/videos/a.mp4"}, {"video_url": "/videos/b.mp4"},
+        {"video_url": new, "video_title_for_youtube_short": "so here is the thing"}])
+    return r
+
+
+def send(rig, update):
+    async def go():
+        await rig.bot.handle_update(update)
+        while rig.bot._tasks:
+            await asyncio.gather(*list(rig.bot._tasks))
+    run(go())
+
+
+def test_cut_command_renders_the_range_and_delivers_it(tmp_path):
+    r = cut_rig(tmp_path)
+    send(r, msg(f"/cut {CUTJOB[:8]} 1:20-2:05"))
+    body = json.loads(r.named("POST /api/clip/cut")[0].content)
+    assert body == {"job_id": CUTJOB, "start": 80, "end": 125, "reapply_captions": True}
+    texts = r.texts()
+    assert texts[0].startswith("✂️ Cutting 1:20-2:05 from job c0ffee12")
+    assert texts[-1].startswith("3. so here is the thing") and "✂️ Your cut 1:19-2:05" in texts[-1]
+    assert f"{CUTJOB}:2" in r.bot.data["clips"]   # the usual record, so the usual buttons work
+
+
+def test_cut_by_quotes_in_reply_to_a_clip_message(tmp_path):
+    r = cut_rig(tmp_path)
+    r.bot.data["clips"][f"{CUTJOB}:0"] = {"chat": CHAT, "i": 0, "title": "A", "msg": 91, "state": ""}
+    send(r, msg('"mera naam" .. "khatam"', reply_to_message={"message_id": 91}))
+    body = json.loads(r.named("POST /api/clip/cut")[0].content)
+    assert body["from_text"] == "mera naam" and body["to_text"] == "khatam" and body["job_id"] == CUTJOB
+
+
+def test_reply_to_the_job_message_and_captions_off(tmp_path):
+    r = cut_rig(tmp_path)
+    r.bot.data["job_settings"][CUTJOB]["cap"] = "off"
+    send(r, msg("75-90", reply_to_message={"message_id": 55}))
+    body = json.loads(r.named("POST /api/clip/cut")[0].content)
+    assert body["start"] == 75 and body["end"] == 90 and body["reapply_captions"] is False
+
+
+def test_cut_limits_and_refusals(tmp_path):
+    r = cut_rig(tmp_path)
+    send(r, msg("/cut 10-12"))
+    send(r, msg("/cut 0-200"))
+    send(r, msg("/cut nonsense"))
+    assert r.named("POST /api/clip/cut") == []
+    t = r.texts()
+    assert "5 s to 3 min" in t[0] and "5 s to 3 min" in t[1] and t[2].startswith("Usage: /cut")
+    # A reply to a message the bot does not know is no cut.
+    send(r, msg("1:20-2:05", reply_to_message={"message_id": 12345}))
+    assert r.named("POST /api/clip/cut") == []
+
+
+def test_cut_api_refusal_is_reported(tmp_path):
+    r = cut_rig(tmp_path, 409, {"detail": "That part of the video is not on the server any more."})
+    send(r, msg("/cut 1:20-2:05"))
+    assert r.texts()[-1] == "Could not cut it: That part of the video is not on the server any more."
+    r2 = cut_rig(tmp_path, 500, {"detail": "/srv/output/x failed"})
+    send(r2, msg("/cut 1:20-2:05"))
+    assert r2.texts()[-1] == "Could not cut it: the render failed"

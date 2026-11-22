@@ -54,6 +54,18 @@ This is separate from the admin-alert bot (`TELEGRAM_BOT_TOKEN`,
   Upload-Post it still lists the YouTube uploads. `/cancel <id>` cancels an
   Upload-Post post (not a job: jobs are cancelled with `/jobs` or the 🛑
   button).
+- Pick it yourself: `/cut [job] <start>-<end>` (`mm:ss`, `h:mm:ss` or seconds,
+  e.g. `/cut 1:20-2:05`) cuts exactly that range as a new clip, and
+  `/cut [job] "from words" .. "to words"` finds the two quotes in the job's
+  transcript (case, accents and punctuation ignored; Devanagari as typed, and
+  Hinglish typed against a Devanagari transcript matches its
+  transliteration). Replying to the job's message or to one of its clips with
+  the range or the quotes does the same; without either, the latest job is
+  used. The range is snapped to word boundaries, must be 5 s to 3 min, and
+  must lie in the part of the source the server kept (else the API says so,
+  409). It goes through `POST /api/clip/cut`, which renders like the editor's
+  re-render and appends the clip to the job; it arrives like any clip, with
+  its buttons. No credits.
 - `/library` lists the split-screen library with a 🗑 delete button per video
   (it imports the server's import folder first, see below). Send a video or
   a video file with the caption `/save <name>` to add it (name rules as for
@@ -225,8 +237,9 @@ atomically:
   "default_preset": {"<chat>": "<name>"},
   "awaiting": {"<chat>": {"kind": "name" | "overwrite" | "title" | "when"
                           | "split_video" | "split_link" | "split_offset", ...}},
-  "job_settings": {"<job id>": {settings, "queued_at"}},  # last 200; queued_at: epoch s
-  "clips": {"<job id>:<index>": {"chat", "msg", "kind", "i", "title", "link",
+  "job_settings": {"<job id>": {settings, "queued_at", "msg"}},  # last 200; queued_at: epoch s,
+                                                       # msg: the job's status message (replies name the job)
+  "clips": {"<job id>:<index>": {"chat", "msg", "kind", "i", "title", "why", "conf", "link",
                                  "state", "at", "late", "youtube_url", "drive_link",
                                  "error", "keep"}}  # last 500 (scheduled ones are never dropped)
 }
@@ -242,6 +255,11 @@ keep for the clip.
 null.
 
 ## Clip delivery
+
+Each clip's caption shows the model's reason ("Why: …", at most 200
+characters) and a confidence of 1-5 dots from the clip's place in the job's
+global ranking (`confidence` in `/api/status`, from `rank_score`); the reason
+gives way first if the caption would pass Telegram's 1024 characters.
 
 By default (`TELEGRAM_SEND_FILES=1`) the bot downloads each clip from the local
 API and sends it as a video (or a document), up to 50 MB each (Bot API limit).

@@ -22,6 +22,7 @@ import httpx
 from silentshorts.pipeline import jsonfile
 from silentshorts.render.hooks import HOOK_STYLES
 from silentshorts.render.subtitles import CAPTION_PRESETS
+from silentshorts.selection.manual_cut import MAX_SECONDS as CUT_MAX, MIN_SECONDS as CUT_MIN
 
 log = logging.getLogger("telegram_bot")
 
@@ -46,6 +47,9 @@ HELP = (
     "(platforms: tiktok,instagram,youtube; job is the short id from Queued)\n"
     "/jobs - queued and running jobs, each with a 🛑 cancel button\n"
     "/clips [job] - resend a finished job's clips with their buttons (latest job if omitted)\n"
+    "/cut [job] <start>-<end> - cut exactly that range (mm:ss or seconds) as a new clip; "
+    "/cut [job] \"from words\" .. \"to words\" finds the words in the transcript. Or reply to "
+    "a job or clip message with the range or the quotes. 5 s to 3 min, free\n"
     "🗓 Schedule upload (under each clip) - send it to YouTube later; times are in "
     "TELEGRAM_TIMEZONE\n"
     "/scheduled - list scheduled YouTube uploads (each with ❌ cancel) and Upload-Post posts\n"
@@ -252,6 +256,44 @@ def explain(clip) -> dict:
     if isinstance(conf, int) and not isinstance(conf, bool) and 1 <= conf <= 5:
         out["conf"] = conf
     return out
+
+
+_Q = "\"“”„«»"
+_QUOTES_RE = re.compile(rf"^\s*[{_Q}](.+?)[{_Q}]\s*(?:\.\.+|…|to|-|–|—)\s*[{_Q}](.+?)[{_Q}]\s*$", re.I)
+_RANGE_RE = re.compile(r"^\s*([\d:.]+)\s*(?:-|–|—|\.\.+|to)\s*([\d:.]+)\s*$", re.I)
+CUT_USAGE = ("Usage: /cut <job> <start>-<end> (mm:ss or seconds, e.g. 1:20-2:05), or "
+             "/cut <job> \"from words\" .. \"to words\". Or reply to a job or clip message with "
+             "the range. 5 s to 3 min; free.")
+
+
+def parse_clock(text) -> Optional[float]:
+    """Seconds from "75", "1:15", "1:02:03" or "1:15.5", else None."""
+    parts = str(text or "").strip().split(":")
+    if not 1 <= len(parts) <= 3:
+        return None
+    try:
+        nums = [float(p) if i == len(parts) - 1 else int(p) for i, p in enumerate(parts)]
+    except ValueError:
+        return None
+    if any(not 0 <= n < float("inf") for n in nums) or any(n >= 60 for n in nums[1:]):
+        return None
+    secs = 0.0
+    for n in nums:
+        secs = secs * 60 + n
+    return secs
+
+
+def parse_cut(text) -> Optional[dict]:
+    """/api/clip/cut fields for "1:20-2:05" or "\"from\" .. \"to\"", else None."""
+    m = _QUOTES_RE.match(text or "")
+    if m and m.group(1).strip() and m.group(2).strip():
+        return {"from_text": m.group(1).strip(), "to_text": m.group(2).strip()}
+    m = _RANGE_RE.match(text or "")
+    if m:
+        a, b = parse_clock(m.group(1)), parse_clock(m.group(2))
+        if a is not None and b is not None and b > a:
+            return {"start": a, "end": b}
+    return None
 
 
 def _btn(text, data):
@@ -496,9 +538,14 @@ class IntakeBot:
                 return await self._save_video(c, chat_id, doc, caption[1])
             return await self._open_panel(c, chat_id, {"file": {
                 k: doc.get(k) for k in ("file_id", "file_name", "file_size")}})
+        reply = (msg.get("reply_to_message") or {}).get("message_id")
+        if text and reply is not None and (cmd and cmd[0] == "/cut" or not cmd and parse_cut(text)):
+            job = self._job_of_message(chat_id, reply)
+            if job:
+                return await self._cut(c, chat_id, cmd[1] if cmd else text, job)
         if cmd:
             name, rest = cmd
-            fn = {"/schedule": self._schedule, "/scheduled": self._scheduled,
+            fn = {"/schedule": self._schedule, "/cut": self._cut, "/scheduled": self._scheduled,
                   "/cancel": self._cancel, "/presets": self._presets,
                   "/preset_delete": self._preset_delete,
                   "/preset_default": self._preset_default,
@@ -967,6 +1014,8 @@ class IntakeBot:
         self.data["job_settings"][job_id] = {**settings, "queued_at": self.now().timestamp()}
         self._remember(chat_id, job_id)
         mid = await self._say(c, chat_id, f"Queued job {job_id[:8]}", self.cancel_keyboard(job_id))
+        self.data["job_settings"][job_id]["msg"] = mid   # a reply to it names the job (/cut)
+        self._save()
         self._spawn(self.track(chat_id, job_id, mid))
 
     # --- progress and delivery -----------------------------------------
@@ -1008,10 +1057,7 @@ class IntakeBot:
                     await self._edit(c, chat_id, msg_id, text)
                     s = clean_settings(self.data["job_settings"].get(job_id))
                     for i, clip in enumerate(clips):
-                        note = None
-                        if s["spl"] == "on" and s["src"]:
-                            clip, note = await self._apply_split(c, job_id, i, clip, s)
-                        await self._deliver(c, chat_id, i, clip, job_id, note)
+                        await self._send_clip(c, chat_id, job_id, i, clip, s)
                     return
                 if st == "failed":
                     return await self._edit(c, chat_id, msg_id, text)
@@ -1046,6 +1092,13 @@ class IntakeBot:
             if isinstance(rel, str) and rel.startswith("/"):
                 return self.public_url + rel
         return None
+
+    async def _send_clip(self, c, chat_id, job_id, i, clip, s, note=None):
+        """Deliver clip ``i``, split-screened first when the job's settings ask."""
+        if s["spl"] == "on" and s["src"]:
+            clip, failed = await self._apply_split(c, job_id, i, clip, s)
+            note = "\n".join(n for n in (note, failed) if n) or None
+        await self._deliver(c, chat_id, i, clip, job_id, note)
 
     async def _apply_split(self, c, job_id, i, clip, s):
         """(clip to deliver, note): the split clip as /api/status now lists it,
@@ -1481,6 +1534,66 @@ class IntakeBot:
             if mid is not None:
                 rec["msg"] = mid
                 self._save()
+
+    # --- pick it yourself (/cut) ----------------------------------------
+    def _job_of_message(self, chat_id, mid) -> Optional[str]:
+        """The job a message of this chat belongs to: a clip, its status or its "more"."""
+        for key, rec in self.data["clips"].items():
+            if rec.get("chat") == chat_id and rec.get("msg") == mid:
+                return key.rsplit(":", 1)[0]
+        for job_id in self.jobs.get(str(chat_id), []):
+            st = self.data["job_settings"].get(job_id) or {}
+            if mid in (st.get("msg"), st.get("more")):
+                return job_id
+        return None
+
+    async def _cut(self, c, chat_id, rest, job_id=None):
+        """``rest``: "[job] <range or quotes>"; the job defaults to the replied-to
+        message's, else the latest. The render runs in the background."""
+        rest = (rest or "").strip()
+        spec = parse_cut(rest)
+        if spec is None:
+            head, _, tail = rest.partition(" ")
+            named = self._resolve(chat_id, head) if head else None
+            if named:
+                job_id, spec = named, parse_cut(tail)
+        if job_id is None:
+            recent = self.jobs.get(str(chat_id), [])
+            job_id = recent[-1] if recent else None
+        if job_id is None or spec is None:
+            return await self._say(c, chat_id, CUT_USAGE)
+        if "start" in spec:
+            if not CUT_MIN <= spec["end"] - spec["start"] <= CUT_MAX:
+                return await self._say(c, chat_id, f"A clip must be {CUT_MIN:g} s to {CUT_MAX / 60:g} min long.")
+            what = f"{fmt_duration(spec['start'])}-{fmt_duration(spec['end'])}"
+        else:
+            what = f"“{spec['from_text']}” .. “{spec['to_text']}”"
+        await self._say(c, chat_id, f"✂️ Cutting {what} from job {job_id[:8]}…")
+        self._spawn(self._cut_task(chat_id, job_id, spec))
+
+    async def _cut_task(self, chat_id, job_id, spec):
+        s = clean_settings(self.data["job_settings"].get(job_id))
+        async with self.client_factory() as c:
+            status, body = await self._api(c, "POST", "/api/clip/cut", timeout=1800, json={
+                "job_id": job_id, **spec, "reapply_captions": s["cap"] != "off"})
+            new = body.get("new_video_url") if status == 200 else None
+            if not (isinstance(new, str) and new.startswith("/videos/")):
+                # 4xx detail only: a 500 may carry paths.
+                reason = (self._detail(body) if 400 <= status < 500 else
+                          "SilentShorts is not reachable" if status == 0 else "the render failed")
+                return await self._say(c, chat_id, f"Could not cut it: {self._safe(reason)[:300]}")
+            st, sb = await self._api(c, "GET", f"/api/status/{job_id}")
+            clips = ((sb.get("result") or {}).get("clips") or []) if st == 200 else []
+            i = next((n for n, x in enumerate(clips) if isinstance(x, dict) and x.get("video_url") == new),
+                     None)
+            clip = clips[i] if i is not None else {"video_url": new}   # the listed one carries the signed URL
+            if i is None:
+                i = int(body.get("clip_index") or len(clips))
+            try:
+                note = f"✂️ Your cut {fmt_duration(body['start'])}-{fmt_duration(body['end'])}"
+            except (KeyError, TypeError, ValueError):
+                note = "✂️ Your cut"
+            await self._send_clip(c, chat_id, job_id, i, clip, s, note)
 
     async def _job_cancel(self, c, chat_id, mid, head, arg):
         where, _, job_id = arg.partition(":")
