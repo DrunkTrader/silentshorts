@@ -33,7 +33,7 @@ This is separate from the admin-alert bot (`TELEGRAM_BOT_TOKEN`,
   message it edits in place. Nothing is queued until you press Start.
 - After Start it replies "Queued job <id>", then edits that one message with
   the job's stages and how long each took (see Job progress below), then sends
-  each clip.
+  the best clips and a ⏬ Show more button for the rest (see Clip delivery).
 - While the job is queued or processing that message has a 🛑 Cancel job
   button. It asks first (Yes, cancel / No), then calls
   `POST /api/jobs/<id>/cancel` and the message turns to "cancelled". A
@@ -237,8 +237,9 @@ atomically:
   "default_preset": {"<chat>": "<name>"},
   "awaiting": {"<chat>": {"kind": "name" | "overwrite" | "title" | "when"
                           | "split_video" | "split_link" | "split_offset", ...}},
-  "job_settings": {"<job id>": {settings, "queued_at", "msg"}},  # last 200; queued_at: epoch s,
-                                                       # msg: the job's status message (replies name the job)
+  "job_settings": {"<job id>": {settings, "queued_at", "msg", "more", "more_sent"}},
+      # last 200; queued_at: epoch s; msg / more: the job's status and "Show more" messages
+      # (a reply to either names the job for /cut); more_sent: Show more was pressed
   "clips": {"<job id>:<index>": {"chat", "msg", "kind", "i", "title", "why", "conf", "link",
                                  "state", "at", "late", "youtube_url", "drive_link",
                                  "error", "keep"}}  # last 500 (scheduled ones are never dropped)
@@ -255,6 +256,11 @@ keep for the clip.
 null.
 
 ## Clip delivery
+
+When a job finishes the bot sends its best `TELEGRAM_TOP_CLIPS` clips (default
+3), best first by `rank_score` (then the model's score), then one message
+"N more clips — ⏬ Show more". Its button sends the clips this chat has not
+received yet, best first, once. `/clips` still resends every clip.
 
 Each clip's caption shows the model's reason ("Why: …", at most 200
 characters) and a confidence of 1-5 dots from the clip's place in the job's

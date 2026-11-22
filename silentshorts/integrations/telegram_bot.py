@@ -22,6 +22,7 @@ import httpx
 from silentshorts.pipeline import jsonfile
 from silentshorts.render.hooks import HOOK_STYLES
 from silentshorts.render.subtitles import CAPTION_PRESETS
+from silentshorts.selection.clip_selection import clip_rank
 from silentshorts.selection.manual_cut import MAX_SECONDS as CUT_MAX, MIN_SECONDS as CUT_MIN
 
 log = logging.getLogger("telegram_bot")
@@ -46,7 +47,8 @@ HELP = (
     "/schedule <job> <clip#> <platforms> <YYYY-MM-DD HH:MM> - schedule a clip "
     "(platforms: tiktok,instagram,youtube; job is the short id from Queued)\n"
     "/jobs - queued and running jobs, each with a 🛑 cancel button\n"
-    "/clips [job] - resend a finished job's clips with their buttons (latest job if omitted)\n"
+    "/clips [job] - resend all of a finished job's clips with their buttons (latest job if omitted); "
+    "a finished job sends its best clips first, the rest behind ⏬ Show more\n"
     "/cut [job] <start>-<end> - cut exactly that range (mm:ss or seconds) as a new clip; "
     "/cut [job] \"from words\" .. \"to words\" finds the words in the transcript. Or reply to "
     "a job or clip message with the range or the quotes. 5 s to 3 min, free\n"
@@ -266,6 +268,12 @@ CUT_USAGE = ("Usage: /cut <job> <start>-<end> (mm:ss or seconds, e.g. 1:20-2:05)
              "the range. 5 s to 3 min; free.")
 
 
+def best_first(clips) -> list:
+    """Indices of ``clips`` best first by ``clip_rank`` (rank_score, then the
+    model's score); ties keep their order."""
+    return sorted(range(len(clips)), key=lambda i: tuple(-x for x in clip_rank(clips[i])))
+
+
 def parse_clock(text) -> Optional[float]:
     """Seconds from "75", "1:15", "1:02:03" or "1:15.5", else None."""
     parts = str(text or "").strip().split(":")
@@ -375,7 +383,7 @@ def check_when(when, now) -> Optional[str]:
 class IntakeBot:
     def __init__(self, api_base, token, allowed_chat_ids, client_factory, state_path,
                  tz="UTC", upload_key="", profile="", send_files=True, public_url="",
-                 n8n_url="", n8n_secret=""):
+                 n8n_url="", n8n_secret="", top_clips=3):
         self.api = api_base.rstrip("/")
         self.token = token
         self.allowed = set(allowed_chat_ids)
@@ -384,6 +392,7 @@ class IntakeBot:
         self.tz, self.upload_key, self.profile = tz, upload_key, profile
         self.send_files, self.public_url = send_files, public_url.rstrip("/")
         self.n8n_url, self.n8n_secret = n8n_url, n8n_secret
+        self.top_clips = max(1, int(top_clips))   # sent on completion; the rest behind Show more
         self.sleep = asyncio.sleep
         self.tick_sleep = asyncio.sleep               # scheduler loop (tests inject both)
         self.now = lambda: datetime.now(timezone.utc)
@@ -704,6 +713,8 @@ class IntakeBot:
             return await self._library_delete(c, chat_id, mid, arg)
         if head in ("cj", "cy", "cn"):
             return await self._job_cancel(c, chat_id, mid, head, arg)
+        if head == "sm":
+            return await self._show_more(c, chat_id, mid, arg)
         panel = self._panels(chat_id).get(str(mid))
         if panel is None:
             return "This panel has expired. Send the link again."
@@ -1056,8 +1067,15 @@ class IntakeBot:
                     clips = (body.get("result") or {}).get("clips") or []
                     await self._edit(c, chat_id, msg_id, text)
                     s = clean_settings(self.data["job_settings"].get(job_id))
-                    for i, clip in enumerate(clips):
-                        await self._send_clip(c, chat_id, job_id, i, clip, s)
+                    order = best_first(clips)
+                    for i in order[:self.top_clips]:
+                        await self._send_clip(c, chat_id, job_id, i, clips[i], s)
+                    more = len(order) - self.top_clips
+                    if more > 0:
+                        mid = await self._say(c, chat_id, f"{more} more clip{'s' if more > 1 else ''} — ⏬ Show more",
+                                              [[_btn("⏬ Show more", f"sm:{job_id}")]])
+                        self.data["job_settings"].setdefault(job_id, {})["more"] = mid
+                        self._save()
                     return
                 if st == "failed":
                     return await self._edit(c, chat_id, msg_id, text)
@@ -1535,6 +1553,33 @@ class IntakeBot:
                 rec["msg"] = mid
                 self._save()
 
+    async def _show_more(self, c, chat_id, mid, job_id):
+        """⏬ Show more: the clips of a job this chat has not been sent yet, best first."""
+        if not _JOB_RE.match(job_id) or job_id not in self.jobs.get(str(chat_id), []):
+            return "I do not know that job any more."
+        st = self.data["job_settings"].setdefault(job_id, {})
+        if st.get("more_sent"):
+            return "Already sent."
+        status, body = await self._api(c, "GET", f"/api/status/{job_id}")
+        clips = ((body.get("result") or {}).get("clips") or []) if status == 200 else []
+        if status != 200:
+            return "SilentShorts is not reachable." if status == 0 else self._detail(body)[:150]
+        rest = [i for i in best_first(clips) if f"{job_id}:{i}" not in self.data["clips"]]
+        st["more_sent"] = True   # before any await that sends: a second press sends nothing
+        self._save()
+        await self._edit(c, chat_id, mid, f"Sending {len(rest)} more clip{'s' if len(rest) != 1 else ''}…"
+                         if rest else "All clips are already here.")
+        if rest:
+            self._spawn(self._send_rest(chat_id, mid, job_id, clips, rest))
+        return None
+
+    async def _send_rest(self, chat_id, mid, job_id, clips, rest):
+        s = clean_settings(self.data["job_settings"].get(job_id))
+        async with self.client_factory() as c:
+            for i in rest:
+                await self._send_clip(c, chat_id, job_id, i, clips[i], s)
+            await self._edit(c, chat_id, mid, f"Sent {len(rest)} more clip{'s' if len(rest) != 1 else ''}.")
+
     # --- pick it yourself (/cut) ----------------------------------------
     def _job_of_message(self, chat_id, mid) -> Optional[str]:
         """The job a message of this chat belongs to: a clip, its status or its "more"."""
@@ -1744,6 +1789,13 @@ class IntakeBot:
                 t.cancel()
 
 
+def _int(raw, default):
+    try:
+        return max(1, int(str(raw).strip()))
+    except (TypeError, ValueError):
+        return default
+
+
 async def run_from_env(is_active: Callable[[], bool] = lambda: True, env=None):
     """Entry point used by app.lifespan (and `python -m silentshorts.integrations.telegram_bot`)."""
     env = os.environ if env is None else env
@@ -1765,7 +1817,8 @@ async def run_from_env(is_active: Callable[[], bool] = lambda: True, env=None):
         send_files=env.get("TELEGRAM_SEND_FILES", "1") != "0",
         public_url=env.get("PUBLIC_API_URL", ""),
         n8n_url=env.get("N8N_UPLOAD_WEBHOOK_URL", ""),
-        n8n_secret=env.get("N8N_WEBHOOK_SECRET", ""))
+        n8n_secret=env.get("N8N_WEBHOOK_SECRET", ""),
+        top_clips=_int(env.get("TELEGRAM_TOP_CLIPS"), 3))
     if bot.n8n_url and not bot.n8n_secret:
         # Fail closed: never post clips to the webhook without its secret.
         log.warning("YouTube upload disabled: N8N_UPLOAD_WEBHOOK_URL is set without N8N_WEBHOOK_SECRET")

@@ -3,6 +3,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs
 
@@ -1682,3 +1683,54 @@ def test_cut_api_refusal_is_reported(tmp_path):
     r2 = cut_rig(tmp_path, 500, {"detail": "/srv/output/x failed"})
     send(r2, msg("/cut 1:20-2:05"))
     assert r2.texts()[-1] == "Could not cut it: the render failed"
+
+
+# --- fewer, better clips (top N, then Show more) -------------------------------------
+TOPJOB = "70b70b70-0000-4000-8000-000000000002"
+RANKED = [{"video_title_for_youtube_short": f"C{n}", "video_url": f"/videos/{TOPJOB}/c{n}.mp4",
+           "rank_score": rs} for n, rs in enumerate((0.2, 0.9, 0.5, 0.7, 0.1))]
+
+
+def top_rig(tmp_path, **kw):
+    r = Rig(tmp_path, **kw)
+    r.bot.jobs[str(CHAT)] = [TOPJOB]
+    r.routes[f"GET /api/status/{TOPJOB}"] = status("completed", RANKED)
+    return r
+
+
+def titles(rig):
+    return [t.splitlines()[0] for t in rig.texts() if re.match(r"\d+\. C", t)]
+
+
+def test_completion_sends_the_top_three_by_rank_then_show_more(tmp_path):
+    r = top_rig(tmp_path)
+    run(r.bot.track(CHAT, TOPJOB, 7))
+    assert titles(r) == ["2. C1", "4. C3", "3. C2"]
+    more = last_json(r, "sendMessage")
+    assert more["text"] == "2 more clips — ⏬ Show more"
+    assert more["reply_markup"]["inline_keyboard"] == [[{"text": "⏬ Show more",
+                                                         "callback_data": f"sm:{TOPJOB}"}]]
+    assert len(f"sm:{TOPJOB}".encode()) <= 64
+    r.calls.clear()
+    press(r, f"sm:{TOPJOB}", wait=True)
+    assert titles(r) == ["1. C0", "5. C4"]
+    assert json.loads(r.named("editMessageText")[-1].content)["text"] == "Sent 2 more clips."
+    r.calls.clear()
+    press(r, f"sm:{TOPJOB}", wait=True)
+    assert titles(r) == [] and last_json(r, "answerCallbackQuery")["text"] == "Already sent."
+    # /clips still resends every clip.
+    r.calls.clear()
+    run(r.bot.handle_update(msg(f"/clips {TOPJOB[:8]}")))
+    assert len(titles(r)) == 5
+
+
+def test_top_clips_is_configurable_and_show_more_is_chat_scoped(tmp_path):
+    r = top_rig(tmp_path, top_clips=5)
+    run(r.bot.track(CHAT, TOPJOB, 7))
+    assert len(titles(r)) == 5 and "Show more" not in r.texts()[-1]
+    other = top_rig(tmp_path)
+    other.bot.jobs[str(CHAT)] = []
+    press(other, f"sm:{TOPJOB}", wait=True)
+    assert last_json(other, "answerCallbackQuery")["text"] == "I do not know that job any more."
+    assert other.named(f"GET /api/status/{TOPJOB}") == []
+    assert tb._int("2", 3) == 2 and tb._int("x", 3) == 3 and tb._int("0", 3) == 1
