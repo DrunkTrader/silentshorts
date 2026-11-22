@@ -326,6 +326,11 @@ def test_temp_file_closed_on_a_crash(api, monkeypatch, spooled):
     assert spooled and all(f.closed for f in spooled)
 
 
+def test_app_serves_the_route():
+    from silentshorts.api import app as appmod
+    assert "/api/integrations/youtube/upload" in appmod.app.openapi()["paths"]
+
+
 # --- sign-in helper --------------------------------------------------------
 def test_auth_url_uses_pkce_loopback_and_upload_scope():
     verifier, challenge = yu.pkce_pair()
