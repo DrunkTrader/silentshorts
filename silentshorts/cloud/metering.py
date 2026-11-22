@@ -593,10 +593,6 @@ async def get_balance(user_id) -> dict:
     return {k: v for k, v in b.items() if not k.startswith("_")}
 
 
-def has_topup_credit_sync(remaining: float) -> bool:
-    return remaining > 0
-
-
 # --------------------------------------------------------------------------- #
 # Reserve / commit / release
 # --------------------------------------------------------------------------- #

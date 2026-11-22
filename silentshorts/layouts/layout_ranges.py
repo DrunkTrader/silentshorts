@@ -123,10 +123,6 @@ def split_ranges(ranges):
             for r in normalise(ranges) if r["layout"] == "split"]
 
 
-def in_split(t, splits):
-    return any(s <= t < e for s, e, *_ in splits or [])
-
-
 def remap(ranges, segments):
     """Carry ranges across a cut-and-concat. ``segments`` are the kept
     stretches of the SOURCE file in order ({"start", "end"}); the output is

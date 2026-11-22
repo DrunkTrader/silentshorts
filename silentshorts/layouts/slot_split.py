@@ -315,10 +315,6 @@ def run_ffmpeg(command, timeout=1800):
         raise RuntimeError(f"ffmpeg failed: {tail}")
 
 
-def basename_safe(name):
-    return os.path.basename(str(name or "").replace("\\", "/")) or "upload"
-
-
 def perform_split(*, source_path, segments, spec, uploads, output_dir, clean_name,
                   out_size, captions_transcript=None, captioner=None,
                   face_centre_fn=None, runner=None):

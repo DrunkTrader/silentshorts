@@ -40,7 +40,7 @@ Ingest (yt-dlp or upload) → transcription (word timestamps) → scene detectio
 
 ## Key Files
 
-The backend is the `silentshorts` package (no `.py` at the repo root; dev scripts in `scripts/`). Run everything from the repo root: `output/`, `uploads/` and `split_library/` resolve from the cwd, and repo-root files (fonts, assets, YOLO weights in `assets/models/`) from `silentshorts.paths.PROJECT_ROOT`. The rules below name modules by their short name (`layout_picker.apply()` is `silentshorts.layouts.layout_picker.apply()`).
+The backend is the `silentshorts` package (no `.py` at the repo root). Run everything from the repo root: `output/`, `uploads/` and `split_library/` resolve from the cwd, and repo-root files (fonts, assets, YOLO weights in `assets/models/`) from `silentshorts.paths.PROJECT_ROOT`. The rules below name modules by their short name (`layout_picker.apply()` is `silentshorts.layouts.layout_picker.apply()`).
 
 - `silentshorts/pipeline/main.py`: core processing (transcription, scene detection, clip extraction, reframing). Runs as a child process per job (`python -u -m silentshorts.pipeline.main`).
 - `silentshorts/api/app.py`: FastAPI server, job queue, REST endpoints, deploy handover/drain.

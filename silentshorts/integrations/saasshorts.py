@@ -1144,33 +1144,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return output_path
 
 
-def generate_srt_from_script(segments: list, output_path: str) -> str:
-    """Fallback: generate basic SRT from script segments (used if no audio available)."""
-    srt_content = ""
-    index = 1
-    for seg in segments:
-        text = seg.get("subtitle_text") or seg.get("narration", "")
-        if not text:
-            continue
-        words = text.split()
-        chunk_size = 3
-        start_time = seg["start"]
-        end_time = seg["end"]
-        duration = end_time - start_time
-        chunks = [words[i : i + chunk_size] for i in range(0, len(words), chunk_size)]
-        chunk_dur = duration / max(len(chunks), 1)
-        for i, chunk in enumerate(chunks):
-            cs = start_time + i * chunk_dur
-            ce = min(start_time + (i + 1) * chunk_dur, end_time)
-            h, m, s, ms = int(cs//3600), int((cs%3600)//60), int(cs%60), int((cs-int(cs))*1000)
-            h2, m2, s2, ms2 = int(ce//3600), int((ce%3600)//60), int(ce%60), int((ce-int(ce))*1000)
-            srt_content += f"{index}\n{h:02d}:{m:02d}:{s:02d},{ms:03d} --> {h2:02d}:{m2:02d}:{s2:02d},{ms2:03d}\n{' '.join(chunk).upper()}\n\n"
-            index += 1
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(srt_content)
-    return output_path
-
-
 def composite_video(
     talking_head_path: str,
     broll_clips: List[Dict],
