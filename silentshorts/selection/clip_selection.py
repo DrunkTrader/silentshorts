@@ -644,6 +644,91 @@ def dedupe_overlapping(shorts, ratio=0.25):
     return [c for _, c in sorted(kept, key=lambda p: p[0])]
 
 
+_SENTENCE_END = (".", "?", "!", "।", "॥")
+
+
+def _sentence_words(transcript_result):
+    """``[(start, end, starts_sentence, ends_sentence)]`` for every timed word,
+    sorted. A sentence starts at a segment's first word or after a word ending
+    in ``.?!।``; it ends at a segment's last word or on such a word."""
+    out = []
+    for g in (transcript_result or {}).get("segments", []):
+        timed = [w for w in g.get("words") or []
+                 if isinstance(w, dict) and w.get("start") is not None and w.get("end") is not None]
+        for i, w in enumerate(timed):
+            text = str(w.get("word") or "").strip().rstrip("\"'”’)]»")
+            out.append([float(w["start"]), float(w["end"]), i == 0,
+                        i == len(timed) - 1 or text.endswith(_SENTENCE_END)])
+    out.sort(key=lambda x: x[0])
+    for prev, cur in zip(out, out[1:]):
+        cur[2] = cur[2] or prev[3]
+    return out
+
+
+def sentence_gate(shorts, transcript_result, video_duration, min_secs, max_secs):
+    """Never mid-sentence: the QA gate run on the snapped clips.
+
+    A clip whose first word does not start a sentence, or whose last word does
+    not end one (``_sentence_words``), is extended to the nearest boundary
+    (start earlier, end later) when that stays within ``max_secs``; otherwise
+    trimmed back to the boundary inside it (start later, end earlier) when that
+    stays at least ``min_secs``; otherwise dropped. Non-speech clips and clips
+    without timed words are exempt. Returns ``(kept, notes)``; notes are short
+    reasons, never transcript text."""
+    words = _sentence_words(transcript_result)
+    duration = float(video_duration)
+    kept, notes = [], []
+
+    def lead(j):
+        gap = words[j][0] - (words[j - 1][1] if j else 0.0)
+        return max(0.0, words[j][0] - min(0.35, max(0.0, gap) / 2))
+
+    def tail(k):
+        gap = (words[k + 1][0] if k + 1 < len(words) else duration) - words[k][1]
+        return min(duration, words[k][1] + min(0.45, max(0.0, gap) / 2))
+
+    for c in shorts:
+        try:
+            a, b = float(c.get("start", 0)), float(c.get("end", 0))
+        except (TypeError, ValueError):
+            kept.append(c)
+            continue
+        inside = [i for i, w in enumerate(words) if a <= (w[0] + w[1]) / 2 <= b]
+        if c.get("kind") == "nonspeech" or not inside:
+            kept.append(c)
+            continue
+        fi, li = inside[0], inside[-1]
+        if words[fi][2] and words[li][3]:
+            kept.append(c)
+            continue
+        # (extend, trim) candidates per side; a side already on a boundary keeps its word.
+        starts = [fi] if words[fi][2] else [
+            next((j for j in range(fi, -1, -1) if words[j][2]), None),
+            next((j for j in range(fi + 1, li + 1) if words[j][2]), None)]
+        ends = [li] if words[li][3] else [
+            next((k for k in range(li, len(words)) if words[k][3]), None),
+            next((k for k in range(li - 1, fi - 1, -1) if words[k][3]), None)]
+        tag = c.get("source_window_id") or "?"
+        for j in starts:
+            done = False
+            for k in ends:
+                if j is None or k is None or k < j:
+                    continue
+                na = a if j == fi and words[fi][2] else lead(j)
+                nb = b if k == li and words[li][3] else tail(k)
+                if min_secs <= nb - na <= max_secs:
+                    notes.append(f"{tag}: mid-sentence {a:g}-{b:g} -> {na:.3f}-{nb:.3f}")
+                    kept.append({**c, "start": round(na, 3), "end": round(nb, 3)})
+                    done = True
+                    break
+            if done:
+                break
+        else:
+            notes.append(f"dropped {tag}: {a:g}-{b:g} cuts mid-sentence and no sentence "
+                         f"boundary fits {min_secs:g}-{max_secs:g}s")
+    return kept, notes
+
+
 def snap_clip_to_words(start, end, words, video_duration,
                        min_duration=CLIP_MIN_DEFAULT, max_duration=CLIP_MAX_DEFAULT,
                        search_window=1.5, max_lead=0.35, max_tail=0.45):

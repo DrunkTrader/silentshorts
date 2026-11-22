@@ -37,7 +37,7 @@ from silentshorts.selection import silent_signals
 from silentshorts.selection.clip_selection import (build_timeline_windows, silent_stretches, build_transcript_windows, build_window_payload,
                             bound_clips, detail_batches, merge_adjacent, neighbour_context, clip_count_targets,
                             clip_duration_bounds, dedupe_overlapping, explain_clips,
-                            score_batches, shortlist_target,
+                            score_batches, sentence_gate, shortlist_target,
                             snap_clip_to_words, trim_to_best,
                             vision_segments)
 from silentshorts.render.ffmpeg_utils import (video_encode_args, audio_encode_args, cut_clip, QUALITY,
@@ -2392,7 +2392,13 @@ def get_viral_clips(transcript_result, video_duration, viewer_clips=None, replay
             if len(deduped) < len(snapped):
                 print(f"   Dropped {len(snapped) - len(deduped)} clip(s) overlapping a "
                       f"better-scored one.")
-            return deduped
+            # QA gate: no clip starts or ends mid-sentence. Extending can make
+            # two clips overlap again, so dedupe once more after it.
+            gated, notes = sentence_gate(deduped, transcript_result, video_duration,
+                                         min_secs, max_secs)
+            for note in notes:
+                print(f"   QA gate: {note}")
+            return dedupe_overlapping(gated) if notes else gated
 
         def _cut(ws):
             """Clips cut in code around the energy peak of non-speech windows."""
