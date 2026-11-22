@@ -14,6 +14,8 @@ import subprocess
 import threading
 import time
 
+from silentshorts.render import timing
+
 # Quality tiers pinning the historical libx264 settings.
 QUALITY = "quality"            # was: -preset medium -crf 18
 QUALITY_FAST = "quality_fast"  # was: -preset fast -crf 18
@@ -394,8 +396,9 @@ def cut_clip(input_video, clip_temp_path, start, end, clip_number):
                        *gpu_args, *audio_encode_args(), clip_temp_path]
 
     def _run_one(cmd):
-        result = subprocess.run(cmd, stdout=subprocess.DEVNULL,
-                                stderr=subprocess.PIPE, text=True, errors="replace")
+        with timing.encode():
+            result = subprocess.run(cmd, stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.PIPE, text=True, errors="replace")
         # ffmpeg has been seen exiting 0 having written nothing, so the file
         # itself is the verdict, not just the return code.
         size = os.path.getsize(clip_temp_path) if os.path.exists(clip_temp_path) else 0

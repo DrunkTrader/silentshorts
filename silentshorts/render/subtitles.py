@@ -6,6 +6,7 @@ import sys
 from silentshorts.render.ffmpeg_utils import (video_encode_args, escape_filter_value, QUALITY,
                           METADATA_SCRUB, finished_before_crash)
 from silentshorts.render import gpu_decode
+from silentshorts.render import timing
 from silentshorts.paths import PROJECT_ROOT
 
 
@@ -696,6 +697,11 @@ def _video_size(path):
         return None
 
 
+def _timed_run(cmd):
+    with timing.encode():
+        return subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+
+
 def burn_subtitles(video_path, srt_path, output_path, alignment=2, fontsize=16,
                    font_name="Verdana", font_color="#FFFFFF",
                    border_color="#000000", border_width=2,
@@ -738,7 +744,7 @@ def burn_subtitles(video_path, srt_path, output_path, alignment=2, fontsize=16,
     _log(f"🎬 Burning subtitles: {' '.join(cmd)}")
     result = gpu_decode.run(
         lambda on_gpu: gpu_decode.on_card(cmd, video_path) if on_gpu else cmd,
-        lambda c: subprocess.run(c, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE),
+        _timed_run,
         ok=lambda r: r.returncode == 0 or finished_before_crash(r, outputs),
         path=video_path)
 

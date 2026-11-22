@@ -24,6 +24,7 @@ import tempfile
 from silentshorts.layouts import active_speaker
 from silentshorts.render import gpu_decode
 from silentshorts.render import gpu_render
+from silentshorts.render import timing
 from silentshorts.layouts import camera_inset
 from silentshorts.render import punch_in
 from silentshorts.layouts import screencast_layout
@@ -536,8 +537,9 @@ def _analyze_trajectory(input_video, scenes_boundaries, scene_strategies,
 # --- render -----------------------------------------------------------------
 
 def _run(cmd):
-    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL,
-                   stderr=subprocess.PIPE, timeout=1800)
+    with timing.encode():
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL,
+                       stderr=subprocess.PIPE, timeout=1800)
 
 
 def _run_segment(input_video, ss, dur, extra_inputs, graph, out_label, seg_path):
@@ -555,8 +557,9 @@ def _run_segment(input_video, ss, dur, extra_inputs, graph, out_label, seg_path)
         ]
 
     def runner(cmd):
-        return subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-                              timeout=1800)
+        with timing.encode():
+            return subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                                  timeout=1800)
 
     result = gpu_decode.run(build, runner, path=input_video)
     if result.returncode != 0:
@@ -602,8 +605,10 @@ def encode_scenes(input_video, specs, orig_w, orig_h, out_w, out_h, fps,
                     "y": int(out_h * m.WATERMARK_Y_RATIO),
                     "w": max(80, int(out_w * m.WATERMARK_WIDTH_RATIO)),
                     "opacity": m.WATERMARK_OPACITY}
-        if gpu_render.render(input_video, specs, orig_w, orig_h, out_w, out_h,
-                             fps, gpu_out, overlay=mark):
+        with timing.encode():
+            rendered = gpu_render.render(input_video, specs, orig_w, orig_h, out_w, out_h,
+                                         fps, gpu_out, overlay=mark)
+        if rendered:
             video_in = ["-i", gpu_out]
 
     if video_in is None:
@@ -921,8 +926,9 @@ def render(input_video, final_output_video, aspect_ratio, content_ranges=None,
                 )
             specs.append((ss, dur, graph, boxes))
 
-        encode_scenes(input_video, specs, orig_w, orig_h, out_w, out_h, fps,
-                      workdir, logo, final_output_video)
+        with timing.step("reframe_encode"):
+            encode_scenes(input_video, specs, orig_w, orig_h, out_w, out_h, fps,
+                          workdir, logo, final_output_video)
     finally:
         import shutil
         shutil.rmtree(workdir, ignore_errors=True)

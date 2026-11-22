@@ -40,6 +40,7 @@ from silentshorts.selection.clip_selection import (build_timeline_windows, silen
                             score_batches, sentence_gate, shortlist_target,
                             snap_clip_to_words, trim_to_best,
                             vision_segments)
+from silentshorts.render import timing
 from silentshorts.render.ffmpeg_utils import (video_encode_args, audio_encode_args, cut_clip, QUALITY,
                           QUALITY_FAST, METADATA_SCRUB)
 from dotenv import load_dotenv
@@ -1584,12 +1585,13 @@ def trim_subtitle_band(input_video, band):
     root, ext = os.path.splitext(input_video)
     out = f"{root}_nosubs{ext or '.mp4'}"
     try:
-        subprocess.run(
-            ["ffmpeg", "-y", "-loglevel", "error", "-i", input_video,
-             "-vf", burned_subtitles.crop_filter(band),
-             *video_encode_args(QUALITY_FAST), "-c:a", "copy", out],
-            check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-            timeout=1800)
+        with timing.step("trim_band"), timing.encode():
+            subprocess.run(
+                ["ffmpeg", "-y", "-loglevel", "error", "-i", input_video,
+                 "-vf", burned_subtitles.crop_filter(band),
+                 *video_encode_args(QUALITY_FAST), "-c:a", "copy", out],
+                check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                timeout=1800)
         return out
     except (subprocess.SubprocessError, OSError) as e:
         print(f"   ⚠️ Could not trim the source subtitles ({e}) — rendering as is.")
@@ -1664,6 +1666,12 @@ def watermark_filter(vw, vh, video="[0:v]", logo="[1:v]", out=""):
     )
 
 
+def _timed_encode(cmd):
+    with timing.encode():
+        return subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                              timeout=1800)
+
+
 def apply_watermark(video_path, output_path=None):
     """Burn the SilentShorts watermark into a finished clip (free plan).
 
@@ -1699,8 +1707,7 @@ def apply_watermark(video_path, output_path=None):
            "-movflags", "+faststart", tmp_path]
     result = gpu_decode.run(
         lambda on_gpu: gpu_decode.on_card(cmd, video_path) if on_gpu else cmd,
-        lambda c: subprocess.run(c, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-                                 timeout=1800),
+        lambda c: _timed_encode(c),
         ok=lambda r: r.returncode == 0 and os.path.exists(tmp_path),
         path=video_path)
     if result.returncode == 0 and os.path.exists(tmp_path):
@@ -2853,11 +2860,14 @@ if __name__ == '__main__':
 
         def _early_work(audio_path, audio_duration, meta=None):
             try:
-                t = transcribe_video(audio_path)
+                with timing.step("transcribe_early"):
+                    t = transcribe_video(audio_path)
                 early["transcript"] = t
                 if audio_duration:
-                    early["clips"] = get_viral_clips(t, audio_duration, viewer_clips=viewer_clips,
-                                                     silent=silent_context(audio_path, meta))
+                    with timing.step("select_clips_early"):
+                        early["clips"] = get_viral_clips(t, audio_duration,
+                                                         viewer_clips=viewer_clips,
+                                                         silent=silent_context(audio_path, meta))
             except Exception as e:
                 print(f"   ℹ️ Early transcription skipped ({type(e).__name__}: {e}).")
                 early["transcript"] = early["clips"] = None
@@ -2886,15 +2896,17 @@ if __name__ == '__main__':
             # Audio first: transcription and the pick need no video. The video
             # comes after the pick, and only as far as the picked clips need.
             try:
-                input_video, video_title = download_youtube_video(
-                    args.url, output_dir, audio_only=True, meta_out=source_meta)
+                with timing.step("download_audio"):
+                    input_video, video_title = download_youtube_video(
+                        args.url, output_dir, audio_only=True, meta_out=source_meta)
             except NoAudioFormat:
                 print("⚠️ No audio-only stream: downloading the whole video instead.")
                 range_mode = False
         replay_ok = range_mode   # only the audio-first extraction fills source_meta
         if not range_mode:
-            input_video, video_title = download_youtube_video(
-                args.url, output_dir, on_audio=_on_audio if use_early else None)
+            with timing.step("download_video"):
+                input_video, video_title = download_youtube_video(
+                    args.url, output_dir, on_audio=_on_audio if use_early else None)
     else:
         input_video = args.input
         video_title = os.path.splitext(os.path.basename(input_video))[0]
@@ -3050,7 +3062,8 @@ if __name__ == '__main__':
                       f"({len(transcript['segments'])} segments) — skipping transcription.")
         if transcript is None:
             try:
-                transcript = transcribe_video(input_video)
+                with timing.step("transcribe"):
+                    transcript = transcribe_video(input_video)
                 save_transcript_checkpoint(output_dir, transcript, input_video, duration)
             except NoAudioError as e:
                 print(f"🔇 {e} — switching to visual analysis.")
@@ -3074,11 +3087,14 @@ if __name__ == '__main__':
         else:
             def _fetch_full():
                 return download_youtube_video(args.url, output_dir)
-            clips_data, _full_video, _full_title, vision = select_clips(
-                transcript, duration, input_video, viewer_clips=viewer_clips, replay_heat=replay_heat,
-                silent={"audio": input_video, "title": source_meta.get('title') or video_title,
-                        "chapters": source_meta.get('chapters')} if transcript is not None else None,
-                fetch_full=_fetch_full if range_mode else None)
+            with timing.step("select_clips"):
+                clips_data, _full_video, _full_title, vision = select_clips(
+                    transcript, duration, input_video, viewer_clips=viewer_clips,
+                    replay_heat=replay_heat,
+                    silent={"audio": input_video, "title": source_meta.get('title') or video_title,
+                            "chapters": source_meta.get('chapters')}
+                    if transcript is not None else None,
+                    fetch_full=_fetch_full if range_mode else None)
             if _full_video:
                 input_video, video_title = _full_video, _full_title
                 source_subtitle_band = _probe_source(input_video)
@@ -3100,10 +3116,12 @@ if __name__ == '__main__':
                 from silentshorts.pipeline import range_ingest
                 from silentshorts.selection.clip_selection import clip_count_targets
                 n_picked = len(clips_data['shorts'])
-                clips_data['shorts'], piece_for, source_pieces = range_ingest.plan_pieces(
-                    clips_data['shorts'], duration,
-                    lambda merged: download_youtube_video(args.url, output_dir, ranges=merged)[0],
-                    min_keep=min(n_picked, clip_count_targets(n_picked)[0]))
+                with timing.step("download_pieces"):
+                    clips_data['shorts'], piece_for, source_pieces = range_ingest.plan_pieces(
+                        clips_data['shorts'], duration,
+                        lambda merged: download_youtube_video(args.url, output_dir,
+                                                              ranges=merged)[0],
+                        min_keep=min(n_picked, clip_count_targets(n_picked)[0]))
                 source_pieces_used.extend(source_pieces)
                 from silentshorts.layouts.reframe_v2 import source_already_fits  # imports main back
 
@@ -3114,10 +3132,11 @@ if __name__ == '__main__':
                                 int(_c.get(cv2.CAP_PROP_FRAME_HEIGHT)))
                     finally:
                         _c.release()
-                source_subtitle_band = range_ingest.probe_pieces(
-                    output_dir, source_pieces, ASPECT_RATIO, source_already_fits, _dims,
-                    os.environ.get("AUTO_CAPTIONS", "1").strip() != "0",
-                    args.skip_analysis)
+                with timing.step("probe_pieces"):
+                    source_subtitle_band = range_ingest.probe_pieces(
+                        output_dir, source_pieces, ASPECT_RATIO, source_already_fits, _dims,
+                        os.environ.get("AUTO_CAPTIONS", "1").strip() != "0",
+                        args.skip_analysis)
 
             # Save metadata. Silent videos have no transcript → no subtitles,
             # which is correct (there's no speech to caption).
@@ -3139,6 +3158,11 @@ if __name__ == '__main__':
             # clip. Renders are mostly ffmpeg subprocesses (parallelize well);
             # detector inference is serialized internally via DETECT_LOCK.
             def _process_one_clip(i, clip):
+                timing.set_clip(i + 1)
+                with timing.step("clip_total"):
+                    return _render_one_clip(i, clip)
+
+            def _render_one_clip(i, clip):
                 start = clip['start']
                 end = clip['end']
                 print(f"\n🎬 Processing Clip {i+1}: {start}s - {end}s")
@@ -3153,7 +3177,8 @@ if __name__ == '__main__':
                     # Range jobs cut from the padded piece, in piece time; the
                     # clip dict and everything downstream keep source time.
                     cut_src, offset = piece_for.get(i, (input_video, 0.0))
-                    cut_clip(cut_src, clip_temp_path, start - offset, end - offset, i + 1)
+                    with timing.step("cut"):
+                        cut_clip(cut_src, clip_temp_path, start - offset, end - offset, i + 1)
 
                     # Layer order: the canonical reframe stays CLEAN, the hook
                     # is a derived hooked_ file, captions go last on top of
@@ -3163,8 +3188,9 @@ if __name__ == '__main__':
                     # permanent: paying could not remove it from clips already
                     # made. Each worker writes only its own clip dict, so the
                     # re-dump after the pool is race-free.
-                    success = render_clip(clip_temp_path, clip_final_path, output_format,
-                                          subtitle_band=source_subtitle_band)
+                    with timing.step("reframe"):
+                        success = render_clip(clip_temp_path, clip_final_path, output_format,
+                                              subtitle_band=source_subtitle_band)
                     if success:
                         print(f"   🎞️ Clip {i+1} framed")
                     deliver_path = clip_final_path
@@ -3176,7 +3202,8 @@ if __name__ == '__main__':
                     # render put this clip's meaning on the screen, rewrite hook
                     # and title from three of its frames BEFORE burning them.
                     if success and hook_grounding.wanted(clip['layout_ranges'], end - start):
-                        hook_grounding.reground(clip_final_path, clip, transcript, start, end)
+                        with timing.step("hook_grounding"):
+                            hook_grounding.reground(clip_final_path, clip, transcript, start, end)
                     captioned = None
                     split_ranges = _layouts.split_ranges(clip['layout_ranges'])
                     if success and os.environ.get("AUTO_HOOK") == "1":
@@ -3186,20 +3213,23 @@ if __name__ == '__main__':
                         if (clip.get('viral_hook_text') or '').strip():
                             plan = auto_caption_clip(clip_final_path, transcript, start, end,
                                                      split_ranges=split_ranges, plan_only=True)
-                        hooked = auto_hook_clip(clip_final_path, clip, captions=plan,
-                                                mark=os.environ.get("WATERMARK") == "1")
+                        with timing.step("hook_captions" if plan else "hook"):
+                            hooked = auto_hook_clip(clip_final_path, clip, captions=plan,
+                                                    mark=os.environ.get("WATERMARK") == "1")
                         if hooked:
                             deliver_path, clip['auto_hook'] = hooked
                             captioned = clip['auto_hook'].pop("_captioned", None)
                     if success:
                         if not captioned:
-                            captioned = auto_caption_clip(
-                                deliver_path, transcript, start, end,
-                                split_ranges=split_ranges,
-                                mark=os.environ.get("WATERMARK") == "1")
+                            with timing.step("captions"):
+                                captioned = auto_caption_clip(
+                                    deliver_path, transcript, start, end,
+                                    split_ranges=split_ranges,
+                                    mark=os.environ.get("WATERMARK") == "1")
                         served = captioned or deliver_path
                         if os.environ.get("WATERMARK") == "1":
-                            served = mark_delivery(served)
+                            with timing.step("watermark"):
+                                served = mark_delivery(served)
                         print(f"   ✅ Clip {i+1} ready: {clip_final_path}")
                         # Hand the API the file to actually serve for this clip.
                         # Without it the status poller guesses the clean reframe

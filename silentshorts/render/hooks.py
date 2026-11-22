@@ -8,6 +8,7 @@ import urllib.request
 import uuid
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
+from silentshorts.render import timing
 from silentshorts.render.ffmpeg_utils import video_encode_args, QUALITY, METADATA_SCRUB, finished_before_crash
 from silentshorts.render import gpu_decode
 
@@ -668,10 +669,13 @@ def _overlay_cmd(video_path, img_path, overlay, output_path):
 
 
 def _run_encode(cmd, video_path, outputs):
+    def run(c):
+        with timing.encode():
+            return subprocess.run(c, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                  timeout=1800)
     return gpu_decode.run(
         lambda on_gpu: gpu_decode.on_card(cmd, video_path) if on_gpu else cmd,
-        lambda c: subprocess.run(c, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                 timeout=1800),
+        run,
         ok=lambda r: r.returncode == 0 or finished_before_crash(r, outputs),
         path=video_path)
 
