@@ -2868,6 +2868,11 @@ app.include_router(_mcp_server.router)
 from silentshorts.api import free_tools as _free_tools
 app.include_router(_free_tools.router)
 
+# Built-in receiver for the intake bot's YouTube upload webhook (self-host only;
+# 404 without N8N_WEBHOOK_SECRET or with billing). See docs/youtube-upload.md.
+from silentshorts.integrations import youtube_upload as _youtube_upload
+app.include_router(_youtube_upload.router)
+
 # Browser origins that may call the API directly. The dashboard normally does
 # not need this: it uses relative URLs through the Vite/nginx proxy, which is
 # same-origin. This list is for a dashboard served from somewhere else
