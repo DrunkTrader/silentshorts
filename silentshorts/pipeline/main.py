@@ -36,7 +36,7 @@ from silentshorts.selection import silent_copy
 from silentshorts.selection import silent_signals
 from silentshorts.selection.clip_selection import (build_timeline_windows, silent_stretches, build_transcript_windows, build_window_payload,
                             bound_clips, detail_batches, merge_adjacent, neighbour_context, clip_count_targets,
-                            clip_duration_bounds, dedupe_overlapping,
+                            clip_duration_bounds, dedupe_overlapping, explain_clips,
                             score_batches, shortlist_target,
                             snap_clip_to_words, trim_to_best,
                             vision_segments)
@@ -2451,6 +2451,14 @@ def get_viral_clips(transcript_result, video_duration, viewer_clips=None, replay
                 silent.get("title"), silent.get("chapters"), transcript_result,
                 language if language not in ("none", "unknown") else "the language of VIDEO_TITLE"))
 
+        # Why this moment: the model's reason, the words it covers and a 1-5
+        # confidence from the global window ranking (never a virality %).
+        # A merged detail window answers to its first id and ranks as its best member.
+        window_rank = {w["id"]: i for i, w in enumerate(ranked)}
+        for item in detail_items:
+            if item.get("ids"):
+                window_rank[item["id"]] = min(window_rank.get(i, len(ranked)) for i in item["ids"])
+        explain_clips(shorts, words, window_rank, len(ranked))
         fixed = language_notes.finalize_copy(shorts, language, script)
         if fixed:
             print(f"   Transliterated {fixed} Devanagari copy field(s) to Hinglish.")

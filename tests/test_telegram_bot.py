@@ -1571,3 +1571,26 @@ def test_jobs_shows_the_stage_and_its_time(rig):
     run(rig.bot.handle_update(msg("/jobs")))
     assert last_json(rig, "sendMessage")["text"].splitlines()[1] == (
         "1. 0123abcd picking moments (3:05 so far): Transcribing audio https://youtu.be/a")
+
+
+# --- why this moment ------------------------------------------------------------
+def test_caption_shows_why_and_confidence_and_fits_telegram(tmp_path):
+    r = Rig(tmp_path, send_files=True)
+    r.routes["GET /videos/j/a.mp4"] = httpx.Response(200, content=b"v")
+    clip = {"video_url": "/videos/j/a.mp4", "video_title_for_youtube_short": "T",
+            "why": "The number lands in the first two seconds.", "confidence": 3}
+    run(_deliver(r, clip))
+    body = r.named("sendVideo")[0].content.decode("utf-8", "ignore")
+    assert "Why: The number lands in the first two seconds." in body
+    assert "Confidence: ●●●○○" in body
+    # A long reason is cut to 200 characters; the whole caption stays under the limit.
+    rec = {"i": 0, "title": "x" * tb.TITLE_CHARS, **tb.explain({"why": "w " * 400, "confidence": 5}),
+           "note": "n" * 300, "state": "failed", "error": "e" * 200}
+    assert len(rec["why"]) == tb.WHY_CHARS
+    text = r.bot.clip_text(rec)
+    assert len(text) <= tb.CAPTION_CHARS and "Upload failed" in text
+
+
+def test_caption_without_why_is_unchanged():
+    assert tb.explain({"confidence": 9, "why": "  "}) == {}
+    assert tb.explain({"confidence": True}) == {}

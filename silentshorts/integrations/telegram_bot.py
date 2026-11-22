@@ -81,6 +81,8 @@ DEFAULTS = {"cap": "default", "lay": "auto", "fmt": "vertical", "hook": "pill",
             "spl": "off", "pos": "bottom", "rat": "50/50", "aud": "source", "off": "0", "src": None}
 NAME_BYTES = 32   # preset names ride in callback_data ("l:<name>", 64-byte cap)
 TITLE_CHARS = 100
+WHY_CHARS = 200
+CAPTION_CHARS = 1000   # Bot API caption limit is 1024
 MAX_OFFSET = 36000   # slot_split.MAX_OFFSET_SECONDS
 _ID_RE = re.compile(r"^[0-9a-f]{32}$")   # a library item id
 _JOB_RE = re.compile(r"^[A-Za-z0-9-]{1,48}$")
@@ -238,6 +240,18 @@ def _unlink(path):
         os.unlink(path)
     except OSError:
         pass
+
+
+def explain(clip) -> dict:
+    """``why`` (at most WHY_CHARS) and ``conf`` (1-5) of a clip, when it has them."""
+    out = {}
+    why = " ".join(str(clip.get("why") or "").split())
+    if why:
+        out["why"] = why if len(why) <= WHY_CHARS else why[:WHY_CHARS - 1].rstrip() + "…"
+    conf = clip.get("confidence")
+    if isinstance(conf, int) and not isinstance(conf, bool) and 1 <= conf <= 5:
+        out["conf"] = conf
+    return out
 
 
 def _btn(text, data):
@@ -1052,6 +1066,7 @@ class IntakeBot:
     async def _deliver(self, c, chat_id, i, clip, job_id=None, note=None):
         title = clip.get("video_title_for_youtube_short") or f"Clip {i + 1}"
         rec = {"chat": chat_id, "i": i, "title": title[:TITLE_CHARS], "link": None, "state": ""}
+        rec.update(explain(clip))
         if note:
             rec["note"] = note
         markup = self.clip_keyboard(job_id, i, rec) if job_id else None
@@ -1097,7 +1112,7 @@ class IntakeBot:
         if got is None:
             return None
         data, name = got
-        form = {"chat_id": str(chat_id), "caption": caption[:1000]}
+        form = {"chat_id": str(chat_id), "caption": caption[:CAPTION_CHARS]}
         if markup:
             form["reply_markup"] = json.dumps({"inline_keyboard": markup})
         for method, field in (("sendVideo", "video"), ("sendDocument", "document")):
@@ -1115,7 +1130,8 @@ class IntakeBot:
         return when.astimezone(zone).strftime("%a %d %b %Y %H:%M ") + used
 
     def clip_text(self, rec) -> str:
-        out = f"{rec['i'] + 1}. {rec['title']}"
+        head = f"{rec['i'] + 1}. {rec['title']}"
+        out = ""
         if rec.get("note"):
             out += f"\n{rec['note']}"
         if rec.get("link"):
@@ -1133,7 +1149,10 @@ class IntakeBot:
             out += "\n⏭ Skipped"
         elif st == "failed":
             out += f"\nUpload failed: {rec.get('error') or 'unknown error'}"
-        return out
+        why = (f"\nWhy: {rec['why']}" if rec.get("why") else "") + (
+            f"\nConfidence: {'●' * rec['conf']}{'○' * (5 - rec['conf'])}" if rec.get("conf") else "")
+        # A caption holds 1024 characters: the reason gives way before the state does.
+        return head + why + out if len(head + why + out) <= CAPTION_CHARS else head + out
 
     def clip_keyboard(self, job_id, i, rec):
         # Without the n8n webhook there is nothing to approve: no buttons at all.
@@ -1158,7 +1177,7 @@ class IntakeBot:
         if rec.get("kind") == "caption":
             await self._tg(c, "editMessageCaption", json={
                 "chat_id": rec["chat"], "message_id": rec["msg"],
-                "caption": self.clip_text(rec)[:1000], "reply_markup": markup})
+                "caption": self.clip_text(rec)[:CAPTION_CHARS], "reply_markup": markup})
         else:
             await self._tg(c, "editMessageText", json={
                 "chat_id": rec["chat"], "message_id": rec["msg"],
@@ -1452,6 +1471,7 @@ class IntakeBot:
                 await self._deliver(c, chat_id, i, clip, job_id)
                 continue
             # Keep the record (edited title, schedule, upload state); only the message is new.
+            rec.update(explain(clip))
             markup = self.clip_keyboard(job_id, i, rec)
             mid = await self._send_file(c, chat_id, clip, self.clip_text(rec), markup) if self.send_files else None
             rec["kind"] = "caption"

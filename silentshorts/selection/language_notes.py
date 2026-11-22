@@ -5,19 +5,21 @@ adds one note after the formatted prompt. Only Hindi has notes today.
 """
 from silentshorts.render import hinglish
 
+# ``why`` is shown to the user next to the clip (Telegram, dashboard), so it
+# follows the same script rule as the copy.
 COPY_FIELDS = ("viral_hook_text", "video_title_for_youtube_short",
-               "video_description_for_tiktok", "video_description_for_instagram")
+               "video_description_for_tiktok", "video_description_for_instagram", "why")
 
 _JUDGE = "The transcript is in Hindi (Devanagari). Judge it as Hindi."
 # A 4B model ignored a bare "write in Hinglish" at the end of the prompt and answered in
 # English (measured on a real Hindi talk); with an example, and said at both ends, it complied.
 # The examples are single words or marked "never copy": full example sentences were
 # pasted verbatim into hooks by the 4B model.
-_HINGLISH = ("Write the title, hook text and descriptions in Hinglish: Hindi in Roman letters, "
+_HINGLISH = ("Write the title, hook text, descriptions and why in Hinglish: Hindi in Roman letters, "
              "the way people type it on Instagram. Not English. Do not use Devanagari. "
              "Keep English words, names and acronyms in their normal English spelling "
              "(GTA, UFO, bro, game, video), never spelled out phonetically.")
-_DEVANAGARI = ("Write the title, hook text and descriptions in Hindi, in Devanagari script, "
+_DEVANAGARI = ("Write the title, hook text, descriptions and why in Hindi, in Devanagari script, "
                "for example \"यह ट्रिक कैसे काम करती है\". Not English.")
 
 

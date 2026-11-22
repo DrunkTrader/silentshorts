@@ -148,6 +148,35 @@ def clip_rank(clip):
     return (rs, pred)
 
 
+def confidence(clip):
+    """1-5 from the clip's place in the job's global ranking (``clip_rank``'s
+    ``rank_score``, 0-1): the top fifth of the windows is 5. A rank, never a
+    claimed virality percentage."""
+    return max(1, min(5, math.ceil(clip_rank(clip)[0] * 5)))
+
+
+def clip_excerpt(words, start, end):
+    """The transcript words whose middle lies inside [start, end], as text.
+    ``words`` are ``{'w','s','e'}`` dicts (``compact_words`` shape)."""
+    return " ".join(str(w.get("w", "")).strip() for w in words or []
+                    if start <= (float(w.get("s", 0)) + float(w.get("e", 0))) / 2 <= end).strip()
+
+
+def explain_clips(shorts, words, window_rank, n_windows):
+    """"Why this moment": every clip gets ``why`` (the model's reason, or ""),
+    ``excerpt`` (``clip_excerpt``) and ``confidence`` (1-5). A clip without
+    ``rank_score`` (speech-only jobs) gets it from its window's position in the
+    scoring pass's global ranking ``window_rank`` ({window id: 0-based position}),
+    on the scale ``silent_signals.merge_rankings`` uses. Edits in place."""
+    for c in shorts:
+        if c.get("rank_score") is None and str(c.get("source_window_id")) in window_rank:
+            c["rank_score"] = round(1 - window_rank[str(c["source_window_id"])] / max(1, n_windows), 4)
+        c["why"] = " ".join(str(c.get("why") or "").split())
+        c["excerpt"] = clip_excerpt(words, float(c.get("start") or 0), float(c.get("end") or 0))
+        c["confidence"] = confidence(c)
+    return shorts
+
+
 def trim_to_best(shorts, max_clips):
     """Cut an over-long detail-pass result down to ``max_clips`` BY SCORE.
 

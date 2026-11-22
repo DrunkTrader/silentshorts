@@ -908,6 +908,14 @@ export default function ResultCard({ clip, index, jobId, durable, uploadPostKey,
                     <div className="flex flex-wrap gap-1.5">
                         {durationReadout && <span className="readout bg-paper3 px-2 py-0.5 rounded-full shrink-0">{durationReadout}</span>}
                         {resolution && <span className="readout bg-paper3 px-2 py-0.5 rounded-full shrink-0">{resolution}</span>}
+                        {/* 1-5 from the clip's place in the global ranking; the excerpt rides the tooltip. */}
+                        {clip.confidence >= 1 && clip.confidence <= 5 && (
+                            <span className="readout bg-paper3 px-2 py-0.5 rounded-full shrink-0"
+                                  title={clip.excerpt ? `Confidence ${clip.confidence}/5 · “${clip.excerpt}”` : `Confidence ${clip.confidence}/5`}
+                                  aria-label={`confidence ${clip.confidence} of 5`}>
+                                {'●'.repeat(clip.confidence) + '○'.repeat(5 - clip.confidence)}
+                            </span>
+                        )}
                         <span className="readout bg-paper3 px-2 py-0.5 rounded-full shrink-0">#shorts</span>
                         <span className="readout bg-paper3 px-2 py-0.5 rounded-full shrink-0">#viral</span>
                     </div>
