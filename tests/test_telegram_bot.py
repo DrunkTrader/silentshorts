@@ -1734,3 +1734,10 @@ def test_top_clips_is_configurable_and_show_more_is_chat_scoped(tmp_path):
     assert last_json(other, "answerCallbackQuery")["text"] == "I do not know that job any more."
     assert other.named(f"GET /api/status/{TOPJOB}") == []
     assert tb._int("2", 3) == 2 and tb._int("x", 3) == 3 and tb._int("0", 3) == 1
+
+
+def test_uploaded_clip_text_omits_drive_when_receiver_has_none(tmp_path):
+    r = Rig(tmp_path)
+    rec = {"i": 0, "title": "T", "state": "uploaded", "youtube_url": "https://youtu.be/X", "drive_link": None}
+    text = r.bot.clip_text(rec)
+    assert "✅ On YouTube: https://youtu.be/X" in text and "Drive" not in text

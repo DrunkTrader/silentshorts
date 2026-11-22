@@ -1215,7 +1215,8 @@ class IntakeBot:
         elif st == "uploading":
             out += "\n⏳ Uploading…"
         elif st == "uploaded":
-            out += f"\n✅ On YouTube: {rec.get('youtube_url') or '?'} (Drive: {rec.get('drive_link') or '?'})"
+            drive = f" (Drive: {rec['drive_link']})" if rec.get("drive_link") else ""
+            out += f"\n✅ On YouTube: {rec.get('youtube_url') or '?'}{drive}"
         elif st == "skipped":
             out += "\n⏭ Skipped"
         elif st == "failed":
