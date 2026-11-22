@@ -152,12 +152,14 @@ Presets are per chat, in the bot's state file.
 
 ## Approval and upload to YouTube (webhook receiver)
 
-YouTube upload is currently off: it needs a webhook receiver that implements
-the multipart contract below, and the repository no longer ships one. Point
-`N8N_UPLOAD_WEBHOOK_URL` (and `N8N_WEBHOOK_SECRET`) at a compatible receiver to get four buttons
-under each clip: Upload to YouTube, Skip, Edit title, Schedule upload. Without
-the URL (or with the URL but no secret) the clips come without buttons and
-`/help` says so.
+YouTube upload needs a webhook receiver that implements the multipart
+contract below. The API ships one: point `N8N_UPLOAD_WEBHOOK_URL` at
+`http://127.0.0.1:<API port>/api/integrations/youtube/upload`, set
+`N8N_WEBHOOK_SECRET`, and sign in to YouTube once (setup in
+[youtube-upload.md](youtube-upload.md)). Any other compatible receiver (n8n,
+...) works too. With both set, each clip gets four buttons: Upload to YouTube,
+Skip, Edit title, Schedule upload. Without the URL (or with the URL but no
+secret) the clips come without buttons and `/help` says so.
 
 - Edit title: the next text message becomes the clip's title (100 chars max).
 - Upload: the clip's message turns to "⏳ Uploading…", then to

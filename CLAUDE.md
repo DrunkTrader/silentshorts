@@ -48,7 +48,7 @@ The backend is the `silentshorts` package (no `.py` at the repo root). Run every
 - `silentshorts/render/`: `editor.py` (Gemini FFmpeg effects), `hooks.py` (hook overlays), `subtitles.py` (SRT/ASS, burning), `translate.py` (ElevenLabs dubbing), `thumbnail.py`.
 - `silentshorts/api/mcp_server.py`, `silentshorts/api/mcp_stdio.py`: MCP over HTTP and stdio (`python -m silentshorts.api.mcp_stdio`).
 - `silentshorts/cloud/`: auth, API keys, metering, billing, lifecycle emails, account erasure, autopilot, proxy ledger, alerts.
-- `silentshorts/integrations/`: Telegram intake bot, social metrics, SaaS Shorts.
+- `silentshorts/integrations/`: Telegram intake bot, YouTube upload receiver (`youtube_upload.py`, docs/youtube-upload.md), social metrics, SaaS Shorts.
 - `dashboard/src/App.jsx`: main React component. `dashboard/vite-plugin-seo.js` + `dashboard/seo/`: build-time SEO pages, sitemap, llms.txt. `dashboard/seo/data.js`: single source of truth for pricing/pipeline/competitor facts.
 
 ## Subsystem reference (read before touching)
