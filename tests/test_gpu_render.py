@@ -194,3 +194,22 @@ class TestEncodeScenes:
         self._encode(tmp_path)
         assert calls["segments"] == 3
         assert "concat" in calls["mux"]
+
+
+def test_captions_or_hook_in_the_reframe_graph_would_leave_the_gpu_path(monkeypatch, tmp_path):
+    """Why hook and captions stay a separate pass after the reframe: osrender
+    reads crop/scale/gblur/overlay/vstack/pad only, so a reframe graph that
+    also burned the captions (ass=) or the hook PNG (a second input) would
+    silently render every scene through ffmpeg on a GPU host."""
+    plain = reframe_v2.general_filtergraph(OW, OH, orig_w=W, orig_h=H)
+    assert _layers(plain)  # today's graph: the GPU path draws it
+    with_captions = plain.replace("[v]", "[b]", 1) + ";[b]ass='subs.ass'[v]"
+    with_hook = plain.replace("[v]", "[b]", 1) + ";[b][1:v]overlay=52:1075[v]"
+    for merged in (with_captions, with_hook):
+        with pytest.raises(gpu_render.Unsupported):
+            _layers(merged)
+    monkeypatch.setattr(gpu_render.subprocess, "run",
+                        lambda *a, **k: pytest.fail("osrender must not run"))
+    for merged in (with_captions, with_hook):
+        assert gpu_render.render("in.mp4", [(0.0, 2.0, merged, None)], W, H, OW, OH,
+                                 30.0, str(tmp_path / "o.mp4")) is False
