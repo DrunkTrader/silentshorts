@@ -21,7 +21,8 @@ def test_ranges_passed_with_exact_cuts_and_numbered_names(main, fake_ydl, tmp_pa
     paths, title = _run(main, tmp_path)
     (dl,) = [i for i in fake_ydl.instances if "process_ie_result" in i.calls]
     assert [(c["start_time"], c["end_time"]) for c in _sections(fake_ydl, dl.params)] == RANGES
-    assert dl.params["force_keyframes_at_cuts"] is True
+    # Stream copy: cut_clip is the one precise re-encode (test_piece_copy).
+    assert not dl.params.get("force_keyframes_at_cuts")
     assert "%(section_number)s" in dl.params["outtmpl"]
     assert dl.params["noplaylist"] is True
     assert [os.path.basename(p) for p in paths] == [f"Talk.piece_{n}.mp4" for n in (1, 2, 3)]

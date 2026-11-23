@@ -128,6 +128,20 @@ def _encode_frame(frame, width):
     return buf.tobytes() if ok else None
 
 
+def _duration(video_path):
+    """Playable seconds per ffprobe (edit lists applied), or 0.0."""
+    import subprocess
+
+    try:
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=nw=1:nk=1", video_path],
+            capture_output=True, text=True, timeout=60)
+        return float(probe.stdout.strip())
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return 0.0
+
+
 def _ffmpeg_frames(video_path, n):
     """The same evenly spread frames, decoded by the ffmpeg CLI.
 
@@ -141,13 +155,8 @@ def _ffmpeg_frames(video_path, n):
     import cv2
     import numpy as np
 
-    try:
-        probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "default=nw=1:nk=1", video_path],
-            capture_output=True, text=True, timeout=60)
-        duration = float(probe.stdout.strip())
-    except (OSError, ValueError, subprocess.SubprocessError):
+    duration = _duration(video_path)
+    if not duration:
         return []
     frames = []
     for i in range(n):
@@ -173,6 +182,11 @@ def sample_frames(video_path, n=None, width=None):
     width = width or SAMPLE_WIDTH
     cap = cv2.VideoCapture(video_path)
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # A stream-copied range piece counts its edit-list pre-roll in
+    # FRAME_COUNT; frames past the playable end cannot be read.
+    playable = _duration(video_path) * (cap.get(cv2.CAP_PROP_FPS) or 0)
+    if playable > 0:
+        total = min(total, int(playable))
     out = []
     try:
         if total > 0:

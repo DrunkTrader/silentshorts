@@ -922,8 +922,8 @@ def _download_youtube_video(url, output_dir=".", on_audio=None, allow_paid=True,
     title, heatmap, chapters, extractor, id.
 
     ``ranges`` (a list of ``(start, end)`` seconds): fetch only those pieces,
-    in one session, each re-encoded from its requested start
-    (``force_keyframes_at_cuts``), and return ``(paths, title)`` with one path
+    in one session, each stream-copied (its t=0 is the range start through
+    the mp4 edit list), and return ``(paths, title)`` with one path
     per range (None for a piece that failed twice). Same attempt ladder and
     1080p/720p format rule as a whole download. ffmpeg fetches ranged streams
     at roughly 1-2.5x realtime, so the caller merges close ranges and caps the
@@ -1107,9 +1107,13 @@ def _download_youtube_video(url, output_dir=".", on_audio=None, allow_paid=True,
                 yield {'start_time': ranges[n][0], 'end_time': ranges[n][1], 'index': n + 1}
 
         dl_opts.update(
-            # Without a keyframe at the cut the piece starts up to a GOP early
-            # and every offset after it is wrong.
-            force_keyframes_at_cuts=True,
+            # Stream copy, no force_keyframes_at_cuts: that re-encoded every
+            # piece with ffmpeg's default libx264 medium (on a 2-core box ~2.4
+            # CPU-s per source second, the costliest encode of the job) only
+            # for cut_clip to re-encode it again. A copied piece starts at the
+            # keyframe before the range with the pre-roll hidden by the mp4
+            # edit list, which ffmpeg honours: the piece's t=0 is still the
+            # range start (same frames, 0 ms audio lag; tests/test_piece_copy).
             # A piece that fails is retried below; the others still land.
             ignoreerrors='only_download',
             outtmpl=os.path.join(output_dir, f'{sanitized}.piece_%(section_number)s.%(ext)s'))
