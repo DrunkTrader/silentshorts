@@ -671,7 +671,8 @@ def render(input_video, final_output_video, aspect_ratio, content_ranges=None,
     content_ranges = content_ranges or []
 
     print("   🚀 Reframe engine v2 (ffmpeg-native render)")
-    scenes, fps = m.detect_scenes(input_video)
+    with timing.step("reframe_scenes"):
+        scenes, fps = m.detect_scenes(input_video)
     fps = float(fps)  # PySceneDetect can hand back a Fraction
     orig_w, orig_h = m.get_video_resolution(input_video)
 
@@ -702,7 +703,8 @@ def render(input_video, final_output_video, aspect_ratio, content_ranges=None,
         print(f"   ↕️  Source is already {orig_w}x{orig_h} vertical — "
               f"passing it through, no reframe")
     else:
-        strategies = m.analyze_scenes_strategy(input_video, scenes)
+        with timing.step("reframe_classify"):
+            strategies = m.analyze_scenes_strategy(input_video, scenes)
         if not content_ranges and screencast_layout.ENABLED:
             content_ranges = screen_ranges(input_video, scenes, fps, strategies)
 
@@ -713,8 +715,9 @@ def render(input_video, final_output_video, aspect_ratio, content_ranges=None,
     # that begin past the last decoded frame, and those get dropped).
     splits = {}
     split_scene_of = {}
-    detected_splits = {} if passthrough else split_layout.detect_split_scenes(
-        input_video, scenes, strategies)
+    with timing.step("reframe_split"):
+        detected_splits = {} if passthrough else split_layout.detect_split_scenes(
+            input_video, scenes, strategies)
     for scene_idx, centres in detected_splits.items():
         strategies[scene_idx] = 'SPLIT'
         start_f = scene_boundaries[scene_idx][0]
@@ -725,21 +728,22 @@ def render(input_video, final_output_video, aspect_ratio, content_ranges=None,
     # is actually talking before spending half the frame on the other one.
     alternates = {}
     if splits and active_speaker.ENABLED:
-        for start_f in list(splits):
-            scene_idx = split_scene_of[start_f]
-            end_f = scene_boundaries[scene_idx][1]
-            verdicts = active_speaker.verdicts_for_scene(
-                input_video, start_f, end_f, fps, splits[start_f])
-            if not active_speaker.is_conversation(verdicts):
-                a, b = active_speaker.shares(verdicts)
-                print(f"   🔇 Scene {scene_idx}: one speaker holds the floor "
-                      f"({max(a, b):.0%}) — not stacking")
-                del splits[start_f]
-                strategies[scene_idx] = 'GENERAL'
-            elif active_speaker.CUT_MODE:
-                strategies[scene_idx] = 'ALTERNATE'
-                alternates[start_f] = (
-                    active_speaker.hold(verdicts), splits.pop(start_f))
+        with timing.step("reframe_speaker"):
+            for start_f in list(splits):
+                scene_idx = split_scene_of[start_f]
+                end_f = scene_boundaries[scene_idx][1]
+                verdicts = active_speaker.verdicts_for_scene(
+                    input_video, start_f, end_f, fps, splits[start_f])
+                if not active_speaker.is_conversation(verdicts):
+                    a, b = active_speaker.shares(verdicts)
+                    print(f"   🔇 Scene {scene_idx}: one speaker holds the floor "
+                          f"({max(a, b):.0%}) — not stacking")
+                    del splits[start_f]
+                    strategies[scene_idx] = 'GENERAL'
+                elif active_speaker.CUT_MODE:
+                    strategies[scene_idx] = 'ALTERNATE'
+                    alternates[start_f] = (
+                        active_speaker.hold(verdicts), splits.pop(start_f))
     if splits:
         print(f"   🪞 SPLIT layout on {len(splits)} scene(s)")
     if alternates:
@@ -819,8 +823,9 @@ def render(input_video, final_output_video, aspect_ratio, content_ranges=None,
     cameraman = m.SmoothedCameraman(out_w, out_h, orig_w, orig_h, aspect_ratio=aspect_ratio)
     tracker = m.SpeakerTracker(cooldown_frames=30)
 
-    xs = _analyze_trajectory(input_video, scene_boundaries, strategies, fps,
-                             orig_w, orig_h, cameraman, tracker)
+    with timing.step("reframe_trajectory"):
+        xs = _analyze_trajectory(input_video, scene_boundaries, strategies, fps,
+                                 orig_w, orig_h, cameraman, tracker)
     if not xs:
         raise RuntimeError("analysis produced no frames")
 
