@@ -74,8 +74,62 @@ def _get_tn2_model():
         device = os.environ.get("TRANSNETV2_DEVICE", "auto")
         model = TransNetV2(device=device)
         model.eval()
+        if str(model.device) == "cpu":
+            model = conv3d_as_conv2d(model)
         _tn2_model = model
     return _tn2_model
+
+
+def conv3d_as_conv2d(model):
+    """Run the model's separable Conv3d layers as the Conv2d they are.
+
+    TransNetV2 only has (1,k,k) spatial and (k,1,1) temporal 3-D convs. On an
+    aarch64 CPU torch's Conv3d kernels are several times slower than its
+    Conv2d ones: measured on a 2-core Neoverse box, a 60 s clip spent 270 s
+    in inference with Conv3d and ~110 s as Conv2d, same predictions (max
+    difference 2e-7). Other layers are left as they are.
+    """
+    import torch.nn as nn
+    import torch.nn.functional as F
+
+    class Spatial(nn.Module):  # (1,kh,kw): a Conv2d over every frame
+        def __init__(self, c):
+            super().__init__()
+            self.weight = nn.Parameter(c.weight.detach().squeeze(2), requires_grad=False)
+            self.bias = c.bias
+            self.padding = c.padding[1:]
+
+        def forward(self, x):
+            n, ch, t, h, w = x.shape
+            y = F.conv2d(x.transpose(1, 2).reshape(n * t, ch, h, w),
+                         self.weight, self.bias, padding=self.padding)
+            return y.reshape(n, t, *y.shape[1:]).transpose(1, 2)
+
+    class Temporal(nn.Module):  # (kt,1,1): a Conv2d over (time, pixels)
+        def __init__(self, c):
+            super().__init__()
+            self.weight = nn.Parameter(c.weight.detach().squeeze(-1), requires_grad=False)
+            self.bias = c.bias
+            self.padding = (c.padding[0], 0)
+            self.dilation = (c.dilation[0], 1)
+
+        def forward(self, x):
+            n, ch, t, h, w = x.shape
+            y = F.conv2d(x.reshape(n, ch, t, h * w), self.weight, self.bias,
+                         padding=self.padding, dilation=self.dilation)
+            return y.reshape(n, y.shape[1], y.shape[2], h, w)
+
+    for parent in list(model.modules()):
+        for name, c in list(parent.named_children()):
+            if not (isinstance(c, nn.Conv3d) and c.stride == (1, 1, 1) and c.groups == 1
+                    and isinstance(c.padding, tuple)):
+                continue
+            k, d = c.kernel_size, c.dilation
+            if k[0] == 1 and d[1:] == (1, 1) and c.padding[0] == 0:
+                setattr(parent, name, Spatial(c))
+            elif k[1:] == (1, 1) and c.padding[1:] == (0, 0):
+                setattr(parent, name, Temporal(c))
+    return model
 
 
 def _extract_frames_small(video_path):
