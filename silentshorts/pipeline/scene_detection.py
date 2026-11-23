@@ -3,7 +3,8 @@
 Primary engine: TransNetV2, a small neural shot-boundary detector that is
 markedly more accurate than threshold-based detection (handles fast camera
 motion, flashes and gradual transitions such as fades/dissolves). Runs on
-48x27 frames, faster than realtime even on CPU.
+48x27 frames; on a small CPU it is still the heaviest analysis step (see
+conv3d_as_conv2d).
 
 Fallback/legacy engine: PySceneDetect ContentDetector, byte-for-byte the
 pre-existing behavior. Any TransNetV2 failure (missing package, corrupt
