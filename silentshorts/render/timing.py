@@ -37,7 +37,8 @@ def step(name, clip=None):
     try:
         yield rec
     finally:
-        stack.remove(rec)
+        # By identity: open steps with equal counts compare equal.
+        stack[:] = [r for r in stack if r is not rec]
         print(f"TIMING clip={clip if clip is not None else '-'} step={name} "
               f"encode_s={rec['encode']:.2f} wall_s={time.monotonic() - t0:.2f}",
               flush=True)
