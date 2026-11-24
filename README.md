@@ -1,4 +1,12 @@
+<p align="center">
+  <img src="docs/assets/silentshorts-wordmark.png" alt="SilentShorts" width="520">
+</p>
+
 # SilentShorts
+
+<p align="center">
+  <img src="docs/assets/silentshorts-banner.webp" alt="A YouTube video becomes a vertical short, delivered through Telegram" width="640">
+</p>
 
 **The open-source OpusClip alternative.** Turn long videos into viral 9:16 Shorts, TikToks and Reels. Self-host it for free (MIT).
 
